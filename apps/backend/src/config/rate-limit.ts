@@ -58,3 +58,16 @@ export const refreshRateLimiter = createRateLimiter({
   limit: 30,
   message: "Too many session refresh attempts. Please try again later.",
 });
+export const forgotPasswordRateLimiter = createRateLimiter({
+  prefix: "himacraft:rate-limit:forgot-password:",
+  windowMs: 15 * 60 * 1000,
+  limit: 3,
+  message: "Too many password reset requests. Please try again later.",
+});
+
+export const resetPasswordRateLimiter = createRateLimiter({
+  prefix: "himacraft:rate-limit:reset-password:",
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  message: "Too many password reset attempts. Please try again later.",
+});

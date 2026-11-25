@@ -9,7 +9,9 @@ import {
 } from "../../shared/security/cookies.js";
 
 import * as authService from "./auth.service.js";
-import { loginSchema, registerSchema } from "./auth.validation.js";
+import { loginSchema, registerSchema, changePasswordSchema, forgotPasswordSchema , resetPasswordSchema } from "./auth.validation.js";
+
+
 
 export const register: RequestHandler = async (req, res) => {
   const input = registerSchema.parse(req.body);
@@ -99,5 +101,53 @@ export const me: RequestHandler = async (req, res) => {
   res.status(200).json({
     success: true,
     data: { user },
+  });
+};
+
+
+export const changePassword: RequestHandler = async (req, res) => {
+  if (!req.user) {
+    throw new AppError(401, "Authentication required", "UNAUTHENTICATED");
+  }
+
+  const input = changePasswordSchema.parse(req.body);
+
+  await authService.changePassword(
+    req.user.id,
+    input.currentPassword,
+    input.newPassword
+  );
+
+  clearAuthCookies(res);
+
+  res.status(200).json({
+    success: true,
+    message: "Password changed successfully. Please log in again.",
+  });
+};
+
+export const forgotPassword: RequestHandler = async (req, res) => {
+  const input = forgotPasswordSchema.parse(req.body);
+
+  await authService.requestPasswordReset(input.email);
+
+  res.status(200).json({
+    success: true,
+    message: "If an account exists with this email, a reset code will be sent.",
+  });
+};
+
+export const resetPassword: RequestHandler = async (req, res) => {
+  const input = resetPasswordSchema.parse(req.body);
+
+  await authService.resetPassword(
+    input.email,
+    input.otp,
+    input.newPassword
+  );
+
+  res.status(200).json({
+    success: true,
+    message: "Password reset successfully. Please log in with your new password.",
   });
 };

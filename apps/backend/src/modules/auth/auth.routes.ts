@@ -1,9 +1,12 @@
+
 import { Router } from "express";
 
 import {
+  forgotPasswordRateLimiter,
   loginRateLimiter,
   refreshRateLimiter,
   registerRateLimiter,
+  resetPasswordRateLimiter,
 } from "../../config/rate-limit.js";
 
 import { authenticate } from "../../middleware/authenticate.js";
@@ -38,8 +41,30 @@ router.post(
 
 router.post("/logout", requireTrustedOrigin, authController.logout);
 
+// Password reset endpoints
+router.post(
+  "/forgot-password",
+  requireTrustedOrigin,
+  forgotPasswordRateLimiter,
+  authController.forgotPassword
+);
+
+router.post(
+  "/reset-password",
+  requireTrustedOrigin,
+  resetPasswordRateLimiter,
+  authController.resetPassword
+);
+
 // Authenticated endpoints
 router.get("/me", authenticate, authController.me);
+
+router.post(
+  "/change-password",
+  requireTrustedOrigin,
+  authenticate,
+  authController.changePassword
+);
 
 router.post(
   "/logout-all",
