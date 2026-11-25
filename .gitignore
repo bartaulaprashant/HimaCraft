@@ -4,5 +4,6 @@ dist/
 coverage/
 *.log
 .DS_Store
-
+generated/
+dist/
 apps/backend/generated/
