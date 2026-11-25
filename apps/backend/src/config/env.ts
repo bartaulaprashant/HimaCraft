@@ -1,16 +1,23 @@
-
 import dotenv from "dotenv";
 import { resolve } from "node:path";
-import {z} from "zod"; 
+import { z } from "zod";
 
 dotenv.config({
   path: resolve(process.cwd(), "../../.env"),
 });
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  NODE_ENV: z
+    .enum(["development", "production", "test"])
+    .default("development"),
   PORT: z.coerce.number().int().min(1).max(65535).default(5000),
   FRONTEND_URL: z.string().url(),
+
+  JWT_ACCESS_SECRET: z.string().min(32),
+  JWT_REFRESH_SECRET: z.string().min(32),
+
+  ACCESS_TOKEN_EXPIRES_IN: z.string().default("15m"),
+  REFRESH_TOKEN_EXPIRES_IN: z.string().default("7d"),
 
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().min(1),
