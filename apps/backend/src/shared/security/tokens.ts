@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { SignJWT, jwtVerify } from "jose";
+import { durationToMilliseconds } from "./duration.js";
 
 import { env } from "../../config/env.js";
 
@@ -23,7 +24,7 @@ export function generateRefreshToken(): string {
 
 export function getRefreshTokenExpiry(): Date {
   return new Date(
-    Date.now() + parseDuration(env.REFRESH_TOKEN_EXPIRES_IN) * 1000
+    Date.now() + durationToMilliseconds(env.REFRESH_TOKEN_EXPIRES_IN)
   );
 }
 
