@@ -217,3 +217,123 @@ Image behavior:
 ## Documentation rule
 
 Keep this file synchronized with actual route definitions and validation schemas. Inspect controllers and validation schemas before documenting new request or response fields. Do not infer undocumented payload details.
+
+
+## Inventory Management, Cart and Wishlist
+
+All endpoints use the `/api/v1` prefix. Protected endpoints require authentication.
+Mutation endpoints additionally require trusted-origin validation.
+
+### Inventory Management
+
+Access: `ADMIN`, `STAFF`
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/inventory` | List inventory records with pagination |
+| GET | `/inventory/:variantId` | Retrieve inventory for a product variant |
+| POST | `/inventory/:variantId/adjustments` | Adjust physical inventory and record a movement |
+
+**List query parameters**
+
+| Parameter | Validation | Default |
+|---|---|---|
+| `page` | Integer, minimum 1 | `1` |
+| `limit` | Integer, 1–50 | `12` |
+
+**Inventory adjustment request body**
+
+```json
+{
+  "type": "RESTOCK",
+  "quantity": 10,
+  "note": "Received new stock"
+}
+```
+
+Validation:
+- `type`: `RESTOCK`, `RETURN` or `ADJUSTMENT`.
+- `quantity`: non-zero integer within the supported PostgreSQL integer range.
+- `RESTOCK` and `RETURN` require a positive quantity.
+- `note`: optional trimmed string, 1–500 characters.
+- Unknown body properties are rejected.
+
+Inventory responses include `availableStock`, calculated as `quantity - reserved`.
+
+Adjustments update inventory and create an inventory movement within a database transaction. The service prevents physical stock from falling below reserved stock or becoming negative.
+
+### Cart
+
+Access: `CUSTOMER`
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/cart` | Retrieve the authenticated customer's cart |
+| POST | `/cart/items` | Add a variant to the cart |
+| PATCH | `/cart/items/:itemId` | Update a cart item's quantity |
+| DELETE | `/cart/items/:itemId` | Remove a cart item |
+| DELETE | `/cart` | Clear the cart |
+
+**Add cart item request body**
+
+```json
+{
+  "variantId": "00000000-0000-4000-8000-000000000001",
+  "quantity": 2
+}
+```
+
+- `variantId`: required UUID.
+- `quantity`: integer from 1 to 99; defaults to `1`.
+
+**Update cart item request body**
+
+```json
+{
+  "quantity": 3
+}
+```
+
+- `quantity`: required integer from 1 to 99.
+- `itemId`: UUID route parameter.
+
+Cart operations validate the selected product variant and available stock. Prices are obtained from the server, not accepted from the client. Checkout must revalidate stock and prices because cart contents are not a stock guarantee.
+
+### Wishlist
+
+Access: `CUSTOMER`
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/wishlist` | Retrieve the authenticated customer's wishlist |
+| POST | `/wishlist/items` | Add a product variant |
+| DELETE | `/wishlist/items/:variantId` | Remove a product variant |
+
+**Add wishlist item request body**
+
+```json
+{
+  "variantId": "00000000-0000-4000-8000-000000000001"
+}
+```
+
+- `variantId`: required UUID.
+- Wishlist entries are associated with product variants.
+- Duplicate entries are prevented by the database uniqueness constraint.
+
+### Inventory reservation background processing
+
+Inventory reservation expiry is handled internally; there is no public reservation endpoint documented here.
+
+- The `inventory` BullMQ queue schedules the `expire-stripe-reservations` job.
+- The inventory worker processes that job using `expireStripeReservations()`.
+- Worker concurrency is configured as `1`.
+- Queue and worker lifecycle are managed by the backend server.
+
+### Verification status
+
+- Inventory: implementation and worker startup confirmed; endpoint verification was skipped at the user's request.
+- Cart: backend TypeScript typecheck passed; endpoint verification not confirmed.
+- Wishlist: backend TypeScript typecheck passed; endpoint verification not confirmed.
+
+These verification notes describe the checks performed; they do not imply that untested endpoints have been manually verified.

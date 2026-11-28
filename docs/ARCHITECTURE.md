@@ -40,11 +40,14 @@ React + TypeScript browser application
 A business module should own its routes, controller, service and validation schemas where appropriate. Shared cross-cutting code belongs in common locations such as config, middleware, utilities and infrastructure.
 
 Current relevant modules include:
-- `modules/auth`
-- `modules/customers`
-- `modules/categories`
-- `modules/artisans`
-- `modules/products`
+- `modules/auth` — authentication, sessions and authorization support.
+- `modules/customers` — customer profiles and addresses.
+- `modules/categories` — category management.
+- `modules/artisans` — artisan management.
+- `modules/products` — products, variants, images and public catalogue.
+- `modules/inventory` — inventory records, adjustments, movements and stock reservations.
+- `modules/cart` — authenticated customer cart operations.
+- `modules/wishlist` — authenticated customer wishlist operations.
 
 The products module currently contains product, variant, image and public catalogue functionality. Inspect the actual repository before assuming module filenames or adding new modules.
 
@@ -74,6 +77,25 @@ app.use("/api/v1/products", productRoutes);
 The protected product router applies authentication and ADMIN/STAFF authorization to its routes. Keep the registration order intact when modifying route mounting. Verify route matching after adding overlapping paths.
 
 Product administration includes product CRUD/archive, nested variant management and nested image management. Public catalogue routes expose active products and product details by slug.
+
+## Background jobs and workers
+
+Background jobs use BullMQ with Redis. Queue producers and workers are separate
+from HTTP request handling and reuse backend modules and infrastructure.
+
+### Inventory queue
+
+- Queue implementation: `src/jobs/queues/inventory.queue.ts`.
+- Worker implementation: `src/jobs/workers/inventory.worker.ts`.
+- Queue name: `inventory`.
+- Scheduled job: `expire-stripe-reservations`.
+- The worker invokes `expireStripeReservations()` from the inventory reservation service.
+- Worker concurrency is configured as `1`.
+- The server initializes the queue and worker during startup and closes them during shutdown.
+- Worker failures and errors are logged through the backend logger.
+
+The reservation service owns reservation lifecycle operations. Do not duplicate
+reservation expiry logic inside HTTP controllers or the worker.
 
 ## Data and consistency
 
@@ -120,3 +142,16 @@ Product administration includes product CRUD/archive, nested variant management 
 ## Deployment direction
 
 Local development uses Docker Compose for PostgreSQL and Redis. Initial deployment target is the user's Ubuntu PC acting as a VPS, with Nginx and HTTPS. GitHub Actions will run quality checks and deployment steps. A cloud platform may be added later after the self-hosted deployment is understood.
+
+
+## Current implementation modules
+
+The backend currently has dedicated modules for inventory, cart and wishlist
+in addition to authentication, customers, categories, artisans and products.
+
+- Inventory adjustments are transactional and create inventory movement records.
+- Inventory availability is derived from physical quantity minus reserved quantity.
+- Cart operations are customer-scoped and use server-side variant prices.
+- Wishlist entries are customer-scoped and variant-specific.
+- Inventory reservation expiry is processed asynchronously through the BullMQ inventory queue.
+- Coupons, discounts and promotional pricing are excluded from the current project scope.

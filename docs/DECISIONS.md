@@ -111,3 +111,14 @@ Record durable technical decisions here. Add new decisions with a date, context,
 **Decision:** Register the public catalogue router before the protected product administration router under `/api/v1/products`.
 
 **Reason:** Both routers share a URL prefix. The public listing and slug routes must be matched before requests fall through to the router that applies authentication and ADMIN/STAFF authorization.
+
+
+## D-020 — Exclude coupons and discounts
+
+**Date:** 2026-11-28
+
+**Decision:** Coupons, discounts, promotional pricing and coupon-redemption functionality are excluded from HimaCraft's current product scope. Checkout and order calculations will use the applicable product prices and separately defined shipping charges, without coupon or discount adjustments.
+
+**Reason:** Keep the initial single-store e-commerce implementation focused on catalogue, inventory, cart, checkout, orders and payments without introducing a separate promotional-pricing subsystem.
+
+**Consequences:** Do not implement coupon or discount endpoints, services, validation, UI or order-calculation logic. Existing completed phases do not depend on this functionality. Reconsider this decision only if the project scope is explicitly changed in the future.

@@ -4,10 +4,11 @@
 
 ## Current position
 
-- **Current phase:** Phase 6 — Inventory and stock reservations.
-- **Current task:** Inspect existing inventory models and implementation, then plan inventory management.
-- **Last confirmed milestone:** Phase 5 product catalogue and category endpoints manually verified; backend TypeScript typecheck passed.
-- **Next task:** Inspect the existing inventory and stock-reservation schema, routes and services before implementing inventory operations.
+- **Current phase:** Phase 8 — Checkout, shipping and order lifecycle.
+- **Current task:** Inspect the existing order-related Prisma models, services and routes before designing checkout.
+- **Last confirmed milestone:** Phase 7 Cart and Wishlist implementation completed; backend TypeScript typecheck passed.
+- **Next task:** Inspect the existing order schema, address handling, inventory reservation lifecycle and cart implementation before implementing checkout.
+- Phase 8 (Coupons and Promotions) has been permanently removed from the current project scope. Checkout is now Phase 8.
 - Automated tests are deferred by user preference.
 - Production build status for the latest Phase 5 batch has not been confirmed in this log.
 
@@ -20,17 +21,16 @@
 | 3 | Authentication and authorization | Verified complete |
 | 4 | Customer profile and address management | Verified complete |
 | 5 | Product catalogue, categories and artisans | Verified complete |
-| 6 | Inventory and stock reservations | Not started |
-| 7 | Cart and wishlist | Not started |
-| 8 | Coupons and promotions | Not started |
-| 9 | Checkout, shipping and order lifecycle | Not started |
-| 10 | Payments and Stripe webhooks | Not started |
-| 11 | Reviews and product recommendations | Not started |
-| 12 | Notifications and browser push | Not started |
-| 13 | Admin operations and analytics | Not started |
-| 14 | Backend hardening and performance | Not started |
-| 15 | Frontend implementation and integration | Not started |
-| 16 | Production deployment and CI/CD | Not started |
+| 6 | Inventory and stock reservations | Implemented — endpoint verification skipped |
+| 7 | Cart and wishlist | Implemented — typecheck passed; endpoint verification pending |
+| 8 | Checkout, shipping and order lifecycle | Not started |
+| 9 | Payments and Stripe webhooks | Not started |
+| 10 | Reviews and product recommendations | Not started |
+| 11 | Notifications and browser push | Not started |
+| 12 | Admin operations and analytics | Not started |
+| 13 | Backend hardening and performance | Not started |
+| 14 | Frontend implementation and integration | Not started |
+| 15 | Production deployment and CI/CD | Not started |
 
 ## Phase 1 — Setup
 
@@ -159,21 +159,67 @@ Known follow-up items:
 
 ## Phase 6 — Inventory and stock reservations
 
+<badge color="success">Implemented</badge>
+
+- [x] Inventory management service.
+- [x] Stock adjustment with transaction-safe database operations.
+- [x] Stock reservation lifecycle: reserve, confirm, release and expiry.
+- [x] Stripe reservation expiry background job using BullMQ.
+- [x] Inventory worker startup and graceful shutdown integration.
+- [x] Backend TypeScript typecheck passed.
+- [x] User confirmed the backend and inventory worker start successfully.
+- [ ] Endpoint verification intentionally skipped at the user's request.
+- [ ] Update detailed API/database documentation if required by future changes.
+
+## Phase 7 — Cart and wishlist
+
+<badge color="success">Implemented</badge>
+
+### Cart
+- [x] Retrieve authenticated customer's cart.
+- [x] Add a product variant to cart.
+- [x] Increase quantity when the variant already exists.
+- [x] Update cart item quantity.
+- [x] Remove a cart item.
+- [x] Clear the cart.
+- [x] Validate active product and variant.
+- [x] Validate available inventory when adding or updating quantities.
+- [x] Calculate line totals, subtotal, item count and availability.
+- [x] Use server-side product prices; never trust client-provided prices.
+- [x] Restrict cart endpoints to CUSTOMER accounts.
+- [x] Apply trusted-origin protection to mutations.
+
+### Wishlist
+- [x] Retrieve authenticated customer's wishlist.
+- [x] Add a product variant.
+- [x] Prevent duplicate entries through the existing unique constraint.
+- [x] Remove a wishlist item.
+- [x] Include product, variant and inventory information.
+- [x] Restrict wishlist endpoints to CUSTOMER accounts.
+- [x] Apply trusted-origin protection to mutations.
+
+### Phase 7 verification
+- [x] Backend TypeScript typecheck passed.
+- [ ] Endpoint verification not yet confirmed.
+
+## Phase 8 — Checkout, shipping and order lifecycle
+
 <badge color="info">Next</badge>
 
 ### Before implementation
+- [ ] Inspect existing Order, OrderItem, OrderStatus and related Prisma models.
+- [ ] Inspect customer address implementation and ownership rules.
+- [ ] Inspect cart and inventory reservation services.
+- [ ] Define checkout validation and price snapshot rules.
+- [ ] Define transaction-safe order creation and inventory reservation.
+- [ ] Define shipping address snapshot and shipping cost handling.
+- [ ] Define order status transitions and cancellation behavior.
+- [ ] Implement customer checkout and order endpoints.
+- [ ] Implement ADMIN/STAFF order management endpoints.
+- [ ] Verify relevant endpoints and edge cases.
+- [ ] Update API, database and progress documentation.
 
-- [ ] Inspect the complete current Prisma definitions for Inventory, InventoryMovement and StockReservation.
-- [ ] Inspect existing inventory-related routes, services, controllers and validation schemas.
-- [ ] Confirm how inventory is currently created with product variants.
-- [ ] Define stock adjustment and reservation state-transition rules.
-- [ ] Define concurrency-safe transaction strategy.
-- [ ] Implement inventory management endpoints.
-- [ ] Implement stock reservation lifecycle.
-- [ ] Manually verify endpoints and edge cases.
-- [ ] Update API and database documentation.
-
-Do not recreate existing models or introduce migrations without first inspecting the current schema.
+Coupons, discounts and promotional pricing are excluded from the current project scope. Do not add coupon or discount logic to checkout or order calculations.
 
 ## Verification policy
 

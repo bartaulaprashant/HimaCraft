@@ -27,7 +27,7 @@ Known fields:
 - optional `emailVerifiedAt`
 - `createdAt`, `updatedAt`
 
-Relations include addresses, refresh tokens, password-reset OTPs, cart, wishlist items, orders, reviews, notifications, push subscriptions, coupon usages and audit logs.
+Relations include addresses, refresh tokens, password-reset OTPs, cart, wishlist items, orders, reviews, notifications, push subscriptions and audit logs.
 
 ### RefreshToken
 
@@ -145,7 +145,7 @@ Inventory availability is a business invariant and must be handled transactional
 
 ## Other domain areas
 
-The broader schema includes inventory movements, cart, wishlist, coupons, orders, order history, stock reservations, payments, webhook events, reviews, notifications, push subscriptions and audit logs. Confirm exact fields, constraints, relations and indexes in Prisma before implementation.
+The broader schema includes inventory movements, cart, wishlist, orders, order history, stock reservations, payments, webhook events, reviews, notifications, push subscriptions and audit logs. Confirm exact fields, constraints, relations and indexes in Prisma before implementation.
 
 ## Data rules
 

@@ -1,5 +1,19 @@
 # HimaCraft — Development Log
 
+## 2026-11-28 — Phase 6 and 7 implementation; roadmap update
+
+- Implemented inventory management and stock reservation lifecycle, including the BullMQ expiry worker.
+- Inventory backend typecheck passed; endpoint verification was skipped at the user's request.
+- Implemented customer cart and wishlist modules and registered their API routes.
+- Cart supports retrieval, add, quantity update, item removal and clearing.
+- Wishlist supports retrieval, add and removal.
+- Cart and wishlist backend TypeScript typecheck passed; endpoint verification remains pending.
+- Removed Coupons and Promotions from the project roadmap and current product scope.
+- Renumbered Checkout, Shipping and Order Lifecycle as Phase 8.
+- Recorded the scope decision in `DECISIONS.md` as D-020.
+- No application code, Prisma schema, migrations or user data were changed as part of this documentation update.
+
+
 Append concise entries in reverse chronological order. Record meaningful changes, commands/results, decisions and unresolved issues. Never record secret values.
 
 ## 2026-11-28 — Phase 5 product catalogue and category completion

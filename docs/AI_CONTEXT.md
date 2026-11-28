@@ -77,7 +77,7 @@ Roles: `CUSTOMER`, `STAFF`, `ADMIN`.
 
 Public registration assigns `CUSTOMER`. ADMIN and STAFF roles are currently assigned manually through Prisma Studio or trusted database administration. Never permit public users to select their own role.
 
-Core domain includes users, addresses, categories, artisans, products, product variants, product images, inventory, inventory movements, cart, wishlist, coupons, stock reservations, orders, payments, reviews, notifications and administration.
+Core domain includes users, addresses, categories, artisans, products, product variants, product images, inventory, inventory movements, cart, wishlist, stock reservations, orders, payments, reviews, notifications and administration. Coupons, discounts and promotional pricing are explicitly excluded from the current project scope.
 
 Important business rules:
 
@@ -169,6 +169,28 @@ Important business rules:
 
 User confirmed Phase 5 endpoint verification and TypeScript typecheck. Do not assume a production build was run unless separately confirmed.
 
+### Phase 6 — Inventory and stock reservations — implemented
+
+- Inventory management and stock adjustment service.
+- Reservation lifecycle: reserve, confirm, release and expire.
+- BullMQ worker handles Stripe reservation expiry.
+- Worker startup and graceful shutdown integrated.
+- Backend TypeScript typecheck passed.
+- Endpoint verification was intentionally skipped at the user's request.
+
+### Phase 7 — Cart and wishlist — implemented
+
+- Customer cart retrieval, add, update, remove and clear operations.
+- Customer wishlist retrieval, add and remove operations.
+- Cart validates active products/variants and available stock.
+- Cart totals use server-side variant prices.
+- Wishlist entries are variant-specific.
+- Customer-only authorization and trusted-origin protection on mutations.
+- Backend TypeScript typecheck passed.
+- Endpoint verification remains unconfirmed.
+
+Coupons, discounts and promotional pricing are excluded from the current project scope. Do not introduce them in checkout, order or payment implementation.
+
 ## Known environment
 
 - Project root: `/home/prashant/Desktop/HimaCraft`.
@@ -198,14 +220,18 @@ For each batch:
 ## Current phase and next action
 
 - Phase 1 — repository/project setup: verified complete.
-- Phase 2 — backend foundation: verified complete.
+- Phase 2 — backend foundation and infrastructure: verified complete.
 - Phase 3 — authentication and authorization: verified complete.
 - Phase 4 — customer profile and address management: verified complete.
 - Phase 5 — product catalogue and categories: verified complete.
-- Phase 6 — inventory and stock reservations: not started.
+- Phase 6 — inventory and stock reservations: implemented; endpoint verification skipped at the user's request.
+- Phase 7 — cart and wishlist: implemented; backend TypeScript typecheck passed; endpoint verification pending.
+- Phase 8 — checkout, shipping and order lifecycle: next.
 
-**Immediate next action:** Inspect the existing inventory-related Prisma models, backend module files, route registration and service patterns. Then plan inventory management and stock reservation implementation around the existing schema. Do not assume that inventory models or reservation models need to be recreated.
+Phase 8 (Coupons and Promotions) was removed from the roadmap. Coupons, discounts and promotional pricing are not part of the current project scope. The phase numbers after the removed phase have been shifted accordingly.
+
+**Immediate next action:** Inspect the existing order-related Prisma models, address handling, cart services and inventory reservation lifecycle. Plan checkout and order management around the existing implementation. Do not assume new models or migrations are required.
 
 ## New-chat continuation prompt
 
-"Continue HimaCraft development. Read `docs/AI_CONTEXT.md`, `docs/PROGRESS.md`, `docs/ARCHITECTURE.md`, `docs/DATABASE.md` and `docs/API.md`. Phase 5 (categories, products, artisans, variants, images and public catalogue) is verified complete. The next area is Phase 6: inventory and stock reservations. Inspect the actual repository and Prisma schema before changing anything. Keep explanations concise, implement backend-first, provide manual Postman verification instructions, and update the existing documentation files only. Do not create phase-specific documentation."
+"Continue HimaCraft development. Read `docs/AI_CONTEXT.md`, `docs/PROGRESS.md`, `docs/ARCHITECTURE.md`, `docs/DATABASE.md`, `docs/API.md` and `docs/DECISIONS.md`. Phases 1–5 are verified complete. Phase 6 (inventory and stock reservations) and Phase 7 (cart and wishlist) are implemented; see `PROGRESS.md` for verification details. The next phase is Phase 8: checkout, shipping and order lifecycle. Coupons, discounts and promotional pricing are explicitly excluded from the project scope. Inspect the actual repository and Prisma schema before changing anything. Keep explanations concise, implement backend-first, and update existing documentation after verified implementation batches."
