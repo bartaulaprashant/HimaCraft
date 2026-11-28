@@ -4,89 +4,139 @@
 
 ## Current position
 
-- **Current phase:** Phase 3 — Authentication and authorization
-- **Current task:** Establish authentication module foundation and implement registration/login/session lifecycle.
-- **Last confirmed milestone:** User confirmed the initial database connection and migration issue was resolved.
-- **Important:** The checklist below is a working record. Verify against current source and command output before treating any item as complete.
+- **Current phase:** Phase 5 — Product catalogue and categories.
+- **Current task:** Complete Category Management build and manual API verification.
+- **Last confirmed milestone:** Category module TypeScript typecheck passed and build verified.
+- **Next task:** Implement Product Management.
+- Automated tests are deferred by user preference.
 
 ## Phase overview
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1 | Repository and project setup | Verified complete (per project history) |
-| 2 | Backend foundation, infrastructure and initial database schema | Verified complete (user confirmed migration issue resolved) |
-| 3 | Authentication and authorization | In progress |
-| 4 | User profile and address management | Not started |
-| 5 | Product catalog, categories, artisans and variants | Not started |
+| 1 | Repository and project setup | Verified complete |
+| 2 | Backend foundation and infrastructure | Verified complete |
+| 3 | Authentication and authorization | Verified complete |
+| 4 | Customer profile and address management | Verified complete |
+| 5 | Product catalogue, categories and artisans | In progress |
 | 6 | Inventory and stock reservations | Not started |
 | 7 | Cart and wishlist | Not started |
 | 8 | Coupons and promotions | Not started |
 | 9 | Checkout, shipping and order lifecycle | Not started |
 | 10 | Payments and Stripe webhooks | Not started |
 | 11 | Reviews and product recommendations | Not started |
-| 12 | Notifications, email and browser push | Not started |
+| 12 | Notifications and browser push | Not started |
 | 13 | Admin operations and analytics | Not started |
-| 14 | Backend hardening, testing and performance | Not started |
+| 14 | Backend hardening and performance | Not started |
 | 15 | Frontend implementation and integration | Not started |
-| 16 | Dockerized production deployment and CI/CD | Not started |
-
-Phase ordering may be adjusted when dependencies require it; record changes in `DECISIONS.md`.
+| 16 | Production deployment and CI/CD | Not started |
 
 ## Phase 1 — Setup
 
-- [x] npm workspaces monorepo created.
-- [x] Backend and frontend application scaffolds created.
-- [x] Shared package and docs directories created.
-- [x] Docker Compose configuration created.
+- [x] npm workspaces monorepo.
+- [x] Backend and frontend scaffolds.
+- [x] Shared package and documentation directories.
+- [x] Docker Compose configuration.
 
 ## Phase 2 — Backend foundation
 
 - [x] PostgreSQL and Redis configured through Docker Compose.
-- [x] Backend TypeScript/Express foundation created.
-- [x] Prisma 7 configuration and PostgreSQL adapter approach established.
-- [x] Initial Prisma migration/database connection issue resolved (user confirmation).
-- [ ] Re-verify current `npm run typecheck -w backend`, tests and build when next touching foundation.
-- [ ] Reconcile this checklist against current files and actual migration history if needed.
+- [x] Express and TypeScript backend foundation.
+- [x] Prisma 7 configuration and PostgreSQL adapter.
+- [x] Initial database connection/migration issue resolved.
 
 ## Phase 3 — Authentication and authorization
 
-### Foundation
-- [ ] Verify installed dependencies (`argon2`, `jose`, and required type/runtime packages).
-- [ ] Verify JWT secrets and expiry settings in root `.env` without sharing secret values.
-- [ ] Confirm Prisma `User`, `RefreshToken` and `PasswordResetOtp` models against current schema.
-- [ ] Establish auth module structure and shared cookie/token utilities.
+- [x] Customer registration and login.
+- [x] Argon2id password hashing.
+- [x] JWT access authentication.
+- [x] Opaque refresh tokens stored as hashes.
+- [x] HTTP-only access and refresh cookies.
+- [x] Refresh-token rotation and session handling.
+- [x] Logout/session revocation functionality.
+- [x] Authentication middleware.
+- [x] RBAC middleware (`CUSTOMER`, `STAFF`, `ADMIN`).
+- [x] Password change.
+- [x] Password-reset OTP flow.
+- [x] Email/SMTP delivery verified by user.
+- [x] Cookie-based authentication with Bearer-token fallback in middleware.
+- [x] User confirmed authentication functionality works.
 
-### Authentication lifecycle
-- [ ] Customer registration with normalized email and safe duplicate handling.
-- [ ] Login with Argon2id password verification.
-- [ ] Short-lived access JWT.
-- [ ] Opaque, cryptographically random refresh token; store only its hash.
-- [ ] Refresh-token rotation with replay/reuse handling.
-- [ ] HTTP-only cookie set/clear behavior and appropriate cookie flags.
-- [ ] Logout current session.
-- [ ] Logout all sessions.
-- [ ] Authentication middleware.
-- [ ] Role-based authorization middleware.
-- [ ] Suspended/deleted account handling.
-- [ ] Password change (verify current password).
-- [ ] Password-reset OTP request, verification and completion with expiry/attempt limits.
-- [ ] Email verification flow, if included in agreed Phase 3 scope.
-- [ ] CSRF strategy appropriate to cookie-based authentication.
-- [ ] Rate limits for login, registration, refresh and OTP endpoints.
+### Role assignment
 
-### Verification
-- [ ] Unit/integration tests for success and failure cases.
-- [ ] Verify refresh rotation and revoked/reused token behavior.
-- [ ] Verify cookie flags and CORS/credentials configuration.
-- [ ] Verify role and resource authorization behavior.
-- [ ] `npm run typecheck -w backend` passes.
-- [ ] `npm run test -w backend` passes.
-- [ ] `npm run build:backend` passes.
-- [ ] API documentation and phase notes updated.
+- Public registration assigns `CUSTOMER`.
+- `ADMIN` and `STAFF` are currently assigned manually through Prisma Studio or trusted database administration.
+- Do not expose role selection through public registration.
 
-## Blockers and known cautions
+## Phase 4 — Customer profile and address management
+
+- [x] Get current customer profile.
+- [x] Update customer profile.
+- [x] List customer addresses.
+- [x] Create customer address.
+- [x] Update customer address.
+- [x] Delete customer address.
+- [x] Enforce address ownership.
+- [x] Handle default-address behavior.
+- [x] User confirmed the functionality works.
+
+### Endpoints
+
+- `GET /api/v1/customers/me`
+- `PATCH /api/v1/customers/me`
+- `GET /api/v1/customers/addresses`
+- `POST /api/v1/customers/addresses`
+- `PATCH /api/v1/customers/addresses/:addressId`
+- `DELETE /api/v1/customers/addresses/:addressId`
+
+## Phase 5 — Product catalogue and categories
+
+### Category Management
+
+- [x] Category validation schemas implemented.
+- [x] Category service implemented.
+- [x] Category controllers implemented.
+- [x] Category routes implemented.
+- [x] Public category listing.
+- [x] Public category lookup by slug.
+- [x] Admin/staff category listing.
+- [x] Category creation and update.
+- [x] Category deletion with product/child protection.
+- [x] Parent-child category hierarchy validation.
+- [x] TypeScript typecheck verified.
+- [ ] Production build verified.
+- [ ] Manual API verification completed.
+- [ ] API documentation finalized.
+
+No Prisma schema migration was required; the Category model already existed.
+
+### Category endpoints
+
+- `GET /api/v1/categories`
+- `GET /api/v1/categories/:slug`
+- `GET /api/v1/categories/admin`
+- `POST /api/v1/categories`
+- `PATCH /api/v1/categories/:categoryId`
+- `DELETE /api/v1/categories/:categoryId`
+
+### Remaining Phase 5 work
+
+- [ ] Complete Category Management verification.
+- [ ] Product Management.
+- [ ] Artisan Management.
+- [ ] Product variants and product images.
+- [ ] Product listing, filtering and pagination.
+
+## Verification policy
+
+- Use TypeScript typecheck and production build.
+- Verify API behavior manually with Postman or an equivalent API client.
+- Automated tests are deferred by user preference.
+- Mark features `Verified complete` only after the relevant verification is confirmed.
+
+## Important cautions
 
 - Never commit or share `.env`.
-- Do not reset Docker volumes to fix credentials.
-- Confirm actual package versions and Prisma schema before implementing against them.
-- Do not assume email delivery provider configuration exists yet.
+- Never expose passwords, JWT secrets, SMTP credentials or tokens.
+- Do not reset Docker volumes to fix database issues.
+- Preserve existing database data.

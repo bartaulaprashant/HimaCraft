@@ -1,51 +1,56 @@
 # HimaCraft — AI Development Context
 
-> Read this file together with `PROGRESS.md` before continuing work. The repository and its current code are the source of truth; this document is a compact orientation guide, not proof that every listed feature is implemented.
+> Read this file together with `PROGRESS.md` before continuing work. Current source code and actual command output are the source of truth.
 
 ## Project overview
 
-HimaCraft is a Nepal-focused e-commerce platform for Pashmina products and Nepalese handicrafts, serving domestic and international customers. It is a portfolio-grade, moderately complex application focused on maintainability, security, performance, scalability and deployment.
+HimaCraft is a Nepal-focused e-commerce platform for Pashmina products and Nepalese handicrafts, serving domestic and international customers.
 
-The application is a single-store e-commerce platform, not a multi-vendor marketplace. Artisan and origin/authenticity information is associated with products.
+It is a single-store e-commerce platform, not a multi-vendor marketplace. Artisan and origin/authenticity information is associated with products.
+
+The project is intended as a portfolio-grade fullstack application focused on maintainability, security, performance, scalability and deployment.
 
 ## Collaboration and implementation rules
 
-- Develop and verify the backend before starting substantial frontend implementation.
+- Develop and verify the backend before substantial frontend implementation.
 - Use a modular monolith; do not split into microservices without a documented reason.
 - Implement coherent, complete batches rather than many tiny steps.
-- Inspect the existing code and schema before modifying them. Never assume a file's current contents from an old conversation.
-- Provide complete files or precise patches with exact paths, plus commands to run.
-- Explain unfamiliar concepts briefly and practically; avoid unnecessary jargon.
-- Prefer production-sensible patterns without adding enterprise complexity that the project does not need.
-- Do not claim code is complete until the user has run the relevant checks and shared successful results.
-- Never ask the user to expose `.env`, secrets, tokens, passwords or private database data.
-- Preserve existing user data. Never recommend destructive commands such as `docker compose down -v` without an explicit, informed reason.
-- Update documentation and `PROGRESS.md` after each verified batch.
-- At the end of a work session, provide a concise handoff: current task, changed files, verification results, remaining issues and exact next action.
-- If the current code conflicts with documentation, inspect it and reconcile the documentation rather than blindly following stale notes.
+- Inspect existing source files and schema before modifying them.
+- Provide complete files or precise patches with exact paths and commands.
+- Keep explanations concise and practical.
+- Do not claim code is complete until the user confirms relevant checks.
+- Never ask the user to expose `.env`, secrets, tokens or passwords.
+- Preserve existing database data; avoid destructive Docker/database commands.
+- Update documentation after each coherent implementation batch.
+- Automated tests are currently deferred at the user's request. Use typecheck, build and manual API verification.
+- At handoff, include current task, changed files, verification results, remaining issues and exact next action.
 
 ## Technology choices
 
 ### Backend
-- Node.js 22, TypeScript, Express 5
-- PostgreSQL 17, Prisma 7 with PostgreSQL adapter
-- Redis 7, ioredis, BullMQ for background jobs
-- Zod validation, Winston logging
-- Argon2id password hashing
-- JWT access/refresh authentication, HTTP-only cookies, RBAC
-- Cloudinary uploads, Stripe test-mode payments, email and browser push integrations
+
+- Node.js 22, TypeScript, Express 5.
+- PostgreSQL 17, Prisma 7 with PostgreSQL adapter.
+- Redis 7, ioredis, BullMQ for background jobs.
+- Zod validation, Winston logging.
+- Argon2id password hashing.
+- JWT access authentication and opaque refresh sessions.
+- HTTP-only cookies and RBAC.
+- Cloudinary uploads, Stripe test-mode payments, email and browser push integrations.
 
 ### Frontend
-- React, TypeScript, Tailwind CSS
-- TanStack Query
-- Framer Motion and GSAP 2D animations
+
+- React, TypeScript, Tailwind CSS.
+- TanStack Query.
+- Framer Motion and GSAP 2D animations.
 
 ### Infrastructure
-- npm workspaces monorepo
-- Docker Compose for local PostgreSQL and Redis
-- GitHub Actions CI/CD
-- Nginx and HTTPS for VPS deployment
-- Ubuntu PC acting as a VPS initially; a suitable free/low-cost cloud deployment later
+
+- npm workspaces monorepo.
+- Docker Compose for local PostgreSQL and Redis.
+- GitHub Actions CI/CD.
+- Nginx and HTTPS for VPS deployment.
+- Ubuntu PC acting as a VPS initially; suitable free/low-cost cloud deployment later.
 
 ## Repository layout
 
@@ -70,17 +75,18 @@ HimaCraft/
 └── README.md
 ```
 
-Actual repository contents may evolve. Inspect before assuming every path exists.
-
-## Product roles and core domain
+## Product roles and domain
 
 Roles: `CUSTOMER`, `STAFF`, `ADMIN`.
+
+Public registration assigns `CUSTOMER`. ADMIN and STAFF roles are currently assigned manually through Prisma Studio or trusted database administration. Never permit public users to select their own role.
 
 Core domain includes products, categories, artisans, product variants, variant-level inventory, cart, wishlist, coupons, checkout, stock reservations, orders, payments, reviews, notifications and administration.
 
 Important business rules:
+
 - PostgreSQL is the source of truth.
-- Money is stored as integer minor units (for NPR, paisa) unless a later documented decision changes this.
+- Money is stored as integer minor units (for NPR, paisa), unless a later documented decision changes this.
 - Inventory changes and stock reservations must be transactionally safe.
 - Stripe webhooks, not browser redirects, are authoritative for asynchronous payment state.
 - Webhook processing must be idempotent.
@@ -98,34 +104,77 @@ Important business rules:
 - Keep controllers thin; business rules belong in services.
 - External providers are isolated behind integration modules.
 
+## Current implementation state
+
+### Authentication and authorization — completed
+
+- Customer registration and login.
+- Argon2id password hashing.
+- JWT access tokens and opaque refresh tokens stored as hashes.
+- HTTP-only cookies named `hc_access` and `hc_refresh`.
+- Refresh rotation and session revocation.
+- Authentication and RBAC middleware.
+- Password change and OTP password reset.
+- Email/SMTP delivery tested by user.
+- Cookie authentication is the normal browser flow.
+- Bearer token is supported as middleware fallback; login does not return it in the response body.
+- User confirmed the authentication functionality works.
+
+### Customer profile and addresses — completed
+
+- Get and update current customer profile.
+- List, create, update and delete addresses.
+- Address ownership enforcement.
+- Default-address handling.
+- User confirmed the functionality works.
+
+### Category Management — implementation provided
+
+- Category validation, service, controller and routes.
+- Public category listing and slug lookup.
+- ADMIN/STAFF-protected management routes.
+- Parent-child hierarchy validation and cycle prevention.
+- Deletion protection when products or children exist.
+- Existing Prisma Category model reused; no migration required.
+- User confirmed TypeScript typecheck passes.
+- Production build and manual API verification remain pending.
+
+## Known environment
+
+- Project root on user's Ubuntu machine: `/home/prashant/Desktop/HimaCraft`.
+- Node.js: `v22.22.1`.
+- Docker Compose services: PostgreSQL 17 and Redis 7.
+- Prisma 7.10.1.
+- Prisma client import path: `../../generated/prisma/client.js`.
+- Backend database singleton: `src/config/database.ts`, exports `prisma`.
+- Prisma config: `apps/backend/prisma7.config.ts`.
+- Do not assume local services are running without fresh confirmation.
+
 ## Development workflow
 
 For each batch:
+
 1. Read `AI_CONTEXT.md`, `PROGRESS.md` and relevant phase/architecture documents.
-2. Inspect the current relevant source files, package scripts and schema.
-3. State the implementation scope and any assumptions.
+2. Inspect current relevant source files, package scripts and schema.
+3. State implementation scope and assumptions.
 4. Implement a coherent batch with exact file paths.
-5. Provide commands for typecheck, tests, migrations and/or manual verification as appropriate.
+5. Provide commands for typecheck, build, migrations and/or manual verification as appropriate.
 6. Review actual output and resolve errors.
 7. Update API/database/architecture documentation where affected.
 8. Update `PROGRESS.md` only after verification.
 9. Add a concise entry to `DEVELOPMENT_LOG.md`.
-10. Provide a handoff summary.
+10. Provide a concise handoff summary.
 
-## Current known environment
+## Current phase and next action
 
-- Project root on user's Ubuntu machine: `/home/prashant/Desktop/HimaCraft`
-- Node.js: `v22.22.1` (known working baseline; do not request an upgrade without a concrete compatibility reason).
-- Docker Compose has PostgreSQL 17 and Redis 7 services.
-- User confirmed the initial database connection/migration issue was resolved.
-- Never assume local services are currently running; ask for or inspect fresh command output when relevant.
+- Phase 1 — repository/project setup: completed.
+- Phase 2 — backend foundation: completed.
+- Phase 3 — authentication and authorization: completed.
+- Phase 4 — customer profile and address management: completed.
+- Phase 5 — product catalogue and categories: in progress.
 
-## Current phase
-
-Phase 1 — repository/project setup: completed.
-Phase 2 — backend foundation and initial database migration: completed according to user confirmation.
-Phase 3 — authentication and authorization: starting; implementation status must be checked against the repository and `PROGRESS.md`.
+**Immediate next action:** Run the backend production build and manually verify Category Management endpoints. Then proceed to Product Management.
 
 ## New-chat continuation prompt
 
-"Continue HimaCraft development. Read `docs/AI_CONTEXT.md`, `docs/PROGRESS.md`, and the relevant phase document. Inspect the current repository files before changing anything. Continue from the next unverified task, follow the documented implementation workflow, and update the project documentation after each verified batch."
+"Continue HimaCraft development. Read `docs/AI_CONTEXT.md` and `docs/PROGRESS.md`. Category Management has been implemented and TypeScript typecheck has passed, but production build and manual API verification are still pending. Continue from this point, inspect the current repository before changing anything, keep explanations concise, and update documentation after each verified batch."
