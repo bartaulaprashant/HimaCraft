@@ -11,7 +11,7 @@ const router = Router();
 router.use(authenticate);
 
 // Customer profile
-router.get("/me", customerController.getProfile);
+router.get("/me", requireTrustedOrigin, customerController.getProfile);
 router.patch(
   "/me",
   requireTrustedOrigin,
@@ -19,7 +19,7 @@ router.patch(
 );
 
 // Delivery addresses
-router.get("/addresses", customerController.listAddresses);
+router.get("/addresses",requireTrustedOrigin, customerController.listAddresses);
 
 router.post(
   "/addresses",

@@ -10,6 +10,7 @@ import { errorHandler } from "./middleware/error-handler.js";
 import healthRoutes from "./modules/health/health.routes.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import customerRoutes from "./modules/customers/customer.routes.js";
+import categoryRoutes from "./modules/categories/category.routes.js"
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use("/api/v1/health", healthRoutes);
 app.use("/api/v1/auth", authRoutes);
 
 app.use("/api/v1/customers", customerRoutes);
+app.use("/api/v1/categories", categoryRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

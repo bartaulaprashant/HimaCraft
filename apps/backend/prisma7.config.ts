@@ -1,9 +1,12 @@
 import dotenv from "dotenv";
-import { resolve } from "node:path";
+import {resolve,  dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "prisma/config";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
 dotenv.config({
-  path: resolve(process.cwd(), "../../.env"),
+  path: resolve(__dirname, "../../.env"),
 });
 
 export default defineConfig({
