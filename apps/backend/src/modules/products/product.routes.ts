@@ -7,6 +7,8 @@ import { requireTrustedOrigin } from "../../middleware/require-trusted-origin.js
 
 import * as productController from "./product.controller.js";
 import * as variantController from "./variant.controller.js";
+import * as imageController from "./image.controller.js";
+import { uploadProductImage } from "../../middleware/upload-product-image.js";
 
 
 const router = Router();
@@ -65,4 +67,36 @@ router.delete(
   variantController.deactivate,
 );
 
+//images endpoints
+// Product image endpoints
+
+router.get(
+  "/:productId/images",
+  imageController.list,
+);
+
+router.post(
+  "/:productId/images",
+  requireTrustedOrigin,
+  uploadProductImage,
+  imageController.upload,
+);
+
+router.patch(
+  "/:productId/images/:imageId",
+  requireTrustedOrigin,
+  imageController.update,
+);
+
+router.patch(
+  "/:productId/images/:imageId/primary",
+  requireTrustedOrigin,
+  imageController.setPrimary,
+);
+
+router.delete(
+  "/:productId/images/:imageId",
+  requireTrustedOrigin,
+  imageController.remove,
+);
 export default router;
