@@ -12,6 +12,7 @@ import authRoutes from "./modules/auth/auth.routes.js";
 import customerRoutes from "./modules/customers/customer.routes.js";
 import categoryRoutes from "./modules/categories/category.routes.js";
 import productRoutes from "./modules/products/product.routes.js";
+import artisanRoutes from "./modules/artisans/artisan.routes.js";
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/customers", customerRoutes);
 app.use("/api/v1/categories", categoryRoutes);
 app.use("/api/v1/products", productRoutes);
+app.use("/api/v1/artisans", artisanRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
