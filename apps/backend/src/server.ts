@@ -14,6 +14,16 @@ import {
   disconnectRedis,
 } from "./config/redis.js";
 
+import {
+  initializeInventoryQueue,
+  closeInventoryQueue,
+} from "./jobs/queues/inventory.queue.js";
+
+import {
+  startInventoryWorker,
+  stopInventoryWorker,
+} from "./jobs/workers/inventory.worker.js";
+
 const server = createServer(app);
 
 let shuttingDown = false;
@@ -24,25 +34,33 @@ async function shutdown(signal: string) {
 
   logger.info(`Received ${signal}. Shutting down...`);
 
-  server.close(async (error) => {
-    try {
-      await Promise.allSettled([
-        disconnectDatabase(),
-        disconnectRedis(),
-      ]);
+  try {
+    await stopInventoryWorker();
+    await closeInventoryQueue();
 
-      if (error) {
-        logger.error("Server shutdown error", error);
+    server.close(async (error) => {
+      try {
+        await Promise.allSettled([
+          disconnectDatabase(),
+          disconnectRedis(),
+        ]);
+
+        if (error) {
+          logger.error("Server shutdown error", { error });
+          process.exit(1);
+        }
+
+        logger.info("Server shutdown complete");
+        process.exit(0);
+      } catch (shutdownError) {
+        logger.error("Shutdown failed", { error: shutdownError });
         process.exit(1);
       }
-
-      logger.info("Server shutdown complete");
-      process.exit(0);
-    } catch (shutdownError) {
-      logger.error("Shutdown failed", shutdownError);
-      process.exit(1);
-    }
-  });
+    });
+  } catch (error) {
+    logger.error("Background services shutdown failed", { error });
+    process.exit(1);
+  }
 }
 
 async function bootstrap() {
@@ -50,11 +68,22 @@ async function bootstrap() {
     await connectDatabase();
     await connectRedis();
 
+    await initializeInventoryQueue();
+    await startInventoryWorker();
+
     server.listen(env.PORT, () => {
       logger.info(`HimaCraft API listening on port ${env.PORT}`);
     });
   } catch (error) {
-    logger.error("Application startup failed", error);
+    logger.error("Application startup failed", { error });
+
+    await Promise.allSettled([
+      stopInventoryWorker(),
+      closeInventoryQueue(),
+      disconnectDatabase(),
+      disconnectRedis(),
+    ]);
+
     process.exit(1);
   }
 }
