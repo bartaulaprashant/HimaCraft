@@ -6,32 +6,34 @@
 - Prisma 7
 - PostgreSQL driver adapter (`@prisma/adapter-pg`)
 - Prisma schema: `apps/backend/prisma/schema.prisma`
-- Prisma config: `apps/backend/prisma7.config.ts` (verify exact current filename)
+- Prisma config: `apps/backend/prisma7.config.ts`
 
 PostgreSQL is the source of truth. Redis must not replace durable relational records.
 
-## Known schema snapshot
+> This is a working schema snapshot, not a replacement for `schema.prisma`. Inspect the live schema before every schema change.
 
-The following model names and fields were observed in the project during Phase 3 planning. Always inspect the live schema before editing; this document is not a substitute for `schema.prisma`.
+## Authentication and user models
 
 ### User
 
-- `id`: UUID primary key
-- `email`: unique
+Known fields:
+- `id`
+- `email` (unique)
 - `passwordHash`
 - `firstName`, `lastName`
 - optional `phone`
-- `role`: `UserRole`, default `CUSTOMER`
-- `status`: `UserStatus`, default `ACTIVE`
+- `role` (`UserRole`, default `CUSTOMER`)
+- `status` (`UserStatus`, default `ACTIVE`)
 - optional `emailVerifiedAt`
 - `createdAt`, `updatedAt`
-- Relations include addresses, refresh tokens, password-reset OTPs, cart, wishlist items, orders, reviews, notifications, push subscriptions, coupon usages and audit logs.
+
+Relations include addresses, refresh tokens, password-reset OTPs, cart, wishlist items, orders, reviews, notifications, push subscriptions, coupon usages and audit logs.
 
 ### RefreshToken
 
 - `id`
 - `userId`
-- `tokenHash`: unique
+- `tokenHash` (unique)
 - `expiresAt`
 - optional `revokedAt`
 - `createdAt`
@@ -44,15 +46,106 @@ The following model names and fields were observed in the project during Phase 3
 - `userId`
 - `otpHash`
 - `expiresAt`
-- `attempts`, default 0
+- `attempts` (default 0)
 - optional `usedAt`
 - `createdAt`
 - User relation with cascade delete
 - Index on `[userId, expiresAt]`
 
-## Domain areas
+## Catalogue models
 
-The broader schema includes users/addresses, categories, artisans, products, variants, images, inventory and movements, cart, wishlist, coupons, orders, order history, stock reservations, payments, webhook events, reviews, notifications, push subscriptions and audit logs. Confirm exact current models and relations in Prisma before implementation.
+### Category
+
+Known fields:
+- `id`, `name`, `slug` (unique)
+- optional `description`, `imageUrl`
+- `isActive` (default true)
+- optional `parentId`
+- `sortOrder` (default 0)
+- `createdAt`, `updatedAt`
+
+Self-relation supports parent and child categories. Products relate to categories. Index: `[parentId, isActive]`.
+
+### Artisan
+
+Known fields:
+- `id`, `name`, `slug` (unique)
+- optional `bio`, `location`, `imageUrl`
+- `isVerified` (default false)
+- `isActive` (default true)
+- `createdAt`, `updatedAt`
+
+Artisans have a one-to-many relationship with products.
+
+### Product
+
+Known fields:
+- `id`
+- `categoryId`
+- optional `artisanId`
+- `name`, `slug` (unique), `description`
+- optional `material`
+- `origin` (default `"Nepal"`)
+- optional `careInstructions`
+- `status` (`ProductStatus`, default `DRAFT`)
+- `isFeatured` (default false)
+- `createdAt`, `updatedAt`
+
+Relations include category, optional artisan, variants, images and reviews.
+
+Known indexes:
+- `[categoryId, status]`
+- `[status, isFeatured]`
+- `[name]`
+- `[createdAt]`
+
+### ProductVariant
+
+Known fields:
+- `id`, `productId`
+- `sku` (unique)
+- `name`
+- optional `size`, `color`
+- `price`
+- optional `compareAtPrice`
+- `currency` (default `"NPR"`)
+- `isActive` (default true)
+- `createdAt`, `updatedAt`
+
+Relations include product, inventory, cart items, wishlist items, order items, stock reservations and inventory movements.
+
+Known index: `[productId, isActive]`.
+
+### ProductImage
+
+Known fields:
+- `id`, `productId`
+- `url`
+- `publicId` (Cloudinary public ID)
+- optional `altText`
+- `sortOrder` (default 0)
+- `isPrimary` (default false)
+
+Relation to Product uses cascade delete. Known index: `[productId, sortOrder]`.
+
+## Inventory model snapshot
+
+### Inventory
+
+Known fields:
+- `id`
+- `variantId` (unique)
+- `quantity` (default 0)
+- `reserved` (default 0)
+- `updatedAt`
+
+Each product variant has an optional one-to-one inventory relation. Variant creation currently creates an inventory record with `quantity: 0` and `reserved: 0`.
+
+Inventory availability is a business invariant and must be handled transactionally. Inspect the current inventory and stock-reservation models before implementing Phase 6.
+
+## Other domain areas
+
+The broader schema includes inventory movements, cart, wishlist, coupons, orders, order history, stock reservations, payments, webhook events, reviews, notifications, push subscriptions and audit logs. Confirm exact fields, constraints, relations and indexes in Prisma before implementation.
 
 ## Data rules
 

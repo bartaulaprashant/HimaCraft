@@ -4,11 +4,12 @@
 
 ## Current position
 
-- **Current phase:** Phase 5 — Product catalogue and categories.
-- **Current task:** Complete Category Management build and manual API verification.
-- **Last confirmed milestone:** Category module TypeScript typecheck passed and build verified.
-- **Next task:** Implement Product Management.
+- **Current phase:** Phase 6 — Inventory and stock reservations.
+- **Current task:** Inspect existing inventory models and implementation, then plan inventory management.
+- **Last confirmed milestone:** Phase 5 product catalogue and category endpoints manually verified; backend TypeScript typecheck passed.
+- **Next task:** Inspect the existing inventory and stock-reservation schema, routes and services before implementing inventory operations.
 - Automated tests are deferred by user preference.
+- Production build status for the latest Phase 5 batch has not been confirmed in this log.
 
 ## Phase overview
 
@@ -18,7 +19,7 @@
 | 2 | Backend foundation and infrastructure | Verified complete |
 | 3 | Authentication and authorization | Verified complete |
 | 4 | Customer profile and address management | Verified complete |
-| 5 | Product catalogue, categories and artisans | In progress |
+| 5 | Product catalogue, categories and artisans | Verified complete |
 | 6 | Inventory and stock reservations | Not started |
 | 7 | Cart and wishlist | Not started |
 | 8 | Coupons and promotions | Not started |
@@ -91,48 +92,95 @@
 
 ## Phase 5 — Product catalogue and categories
 
+<badge color="success">Verified complete</badge>
+
 ### Category Management
 
-- [x] Category validation schemas implemented.
-- [x] Category service implemented.
-- [x] Category controllers implemented.
-- [x] Category routes implemented.
-- [x] Public category listing.
-- [x] Public category lookup by slug.
-- [x] Admin/staff category listing.
+- [x] Category validation, service, controller and routes.
+- [x] Public category listing and lookup by slug.
+- [x] ADMIN/STAFF category listing and management.
 - [x] Category creation and update.
 - [x] Category deletion with product/child protection.
-- [x] Parent-child category hierarchy validation.
-- [x] TypeScript typecheck verified.
-- [ ] Production build verified.
-- [ ] Manual API verification completed.
-- [ ] API documentation finalized.
+- [x] Parent-child hierarchy validation and cycle prevention.
+- [x] Existing Category model reused; no migration required.
+- [x] User verified endpoints.
+  
+### Product Management
 
-No Prisma schema migration was required; the Category model already existed.
+- [x] Product creation.
+- [x] Product lookup by ID.
+- [x] Product update.
+- [x] Product archive instead of hard deletion.
+- [x] Automatic slug generation and uniqueness handling.
+- [x] Category and artisan reference validation.
 
-### Category endpoints
+### Artisan Management
 
-- `GET /api/v1/categories`
-- `GET /api/v1/categories/:slug`
-- `GET /api/v1/categories/admin`
-- `POST /api/v1/categories`
-- `PATCH /api/v1/categories/:categoryId`
-- `DELETE /api/v1/categories/:categoryId`
+- [x] Artisan listing and lookup.
+- [x] Artisan creation and update.
+- [x] Artisan deactivation instead of hard deletion.
+- [x] Automatic slug generation and uniqueness handling.
 
-### Remaining Phase 5 work
+### Product variants
 
-- [ ] Complete Category Management verification.
-- [ ] Product Management.
-- [ ] Artisan Management.
-- [ ] Product variants and product images.
-- [ ] Product listing, filtering and pagination.
+- [x] List, create, get, update and deactivate variants.
+- [x] SKU uniqueness handling.
+- [x] Variant ownership validation against parent product.
+- [x] Automatic inventory record creation with quantity and reserved set to zero.
+
+### Product images
+
+- [x] Cloudinary integration and upload middleware.
+- [x] Product image listing and upload.
+- [x] Image metadata update.
+- [x] Set primary image.
+- [x] Delete image and promote next image when deleting the primary.
+- [x] Best-effort Cloudinary cleanup.
+
+### Public catalogue
+
+- [x] Public product listing.
+- [x] Search and filtering.
+- [x] Sorting and pagination.
+- [x] Public product detail lookup by slug.
+- [x] Active products and active variants included in public catalogue responses.
+
+### Phase 5 verification
+
+- [x] User manually verified endpoint groups.
+- [x] Backend TypeScript typecheck passed.
+- [ ] Production build result recorded.
+
+Known follow-up items:
+- Optimize price sorting, which currently loads matching products and sorts in application code before pagination.
+- Consider stronger image validation using actual file content rather than trusting MIME metadata.
+- Consider a database-level strategy to guarantee at most one primary image per product under concurrent writes.
+- Monitor and clean up orphaned Cloudinary assets when provider cleanup fails.
+
+## Phase 6 — Inventory and stock reservations
+
+<badge color="info">Next</badge>
+
+### Before implementation
+
+- [ ] Inspect the complete current Prisma definitions for Inventory, InventoryMovement and StockReservation.
+- [ ] Inspect existing inventory-related routes, services, controllers and validation schemas.
+- [ ] Confirm how inventory is currently created with product variants.
+- [ ] Define stock adjustment and reservation state-transition rules.
+- [ ] Define concurrency-safe transaction strategy.
+- [ ] Implement inventory management endpoints.
+- [ ] Implement stock reservation lifecycle.
+- [ ] Manually verify endpoints and edge cases.
+- [ ] Update API and database documentation.
+
+Do not recreate existing models or introduce migrations without first inspecting the current schema.
 
 ## Verification policy
 
 - Use TypeScript typecheck and production build.
 - Verify API behavior manually with Postman or an equivalent API client.
 - Automated tests are deferred by user preference.
-- Mark features `Verified complete` only after the relevant verification is confirmed.
+- Mark features `Verified complete` only after the relevant verification is confirmed by the user.
 
 ## Important cautions
 
@@ -140,3 +188,4 @@ No Prisma schema migration was required; the Category model already existed.
 - Never expose passwords, JWT secrets, SMTP credentials or tokens.
 - Do not reset Docker volumes to fix database issues.
 - Preserve existing database data.
+- Inspect existing schema and code before adding or changing models, routes or services.

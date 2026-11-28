@@ -76,6 +76,38 @@ Record durable technical decisions here. Add new decisions with a date, context,
 
 ## D-014 — Documentation as continuity
 
-**Decision:** Repository documentation is the durable project memory across ChatGPT conversations. `AI_CONTEXT.md`, `PROGRESS.md`, phase notes and the actual source code take precedence over chat history.
+**Decision:** Repository documentation is the durable project memory across ChatGPT conversations. The existing context, progress, architecture, database, API, decisions and development-log documents are the handoff source, together with actual source code.
 
-**Reason:** Prevent context-window loss from interrupting development.
+**Reason:** Prevent context-window loss from interrupting development. Do not create separate phase documentation unless explicitly requested.
+
+## D-015 — Product archival
+
+**Decision:** Product removal through the administration API archives the product by setting status to `ARCHIVED` and clearing `isFeatured`, rather than hard-deleting it.
+
+**Reason:** Preserve product records and their relationships for historical and operational integrity.
+
+## D-016 — Artisan and variant deactivation
+
+**Decision:** Artisan and product variant DELETE routes deactivate their records instead of hard-deleting them.
+
+**Reason:** Preserve relationships and historical references while preventing inactive records from being treated as active catalogue options.
+
+## D-017 — Inventory initialization with variants
+
+**Decision:** Creating a product variant also creates its inventory record with quantity and reserved both set to zero.
+
+**Reason:** Ensure each newly created variant has an inventory record before stock-management operations begin.
+
+## D-018 — Cloudinary product image storage
+
+**Decision:** Store product image files in Cloudinary and image metadata, URL and Cloudinary public ID in PostgreSQL.
+
+**Reason:** Keep binary media outside the relational database while retaining database-managed image relationships and ordering.
+
+**Consequences:** Cloudinary cleanup is best-effort. A failed cleanup can leave an orphaned asset. A failed database write after upload triggers a compensating Cloudinary deletion attempt.
+
+## D-019 — Public and protected product route registration
+
+**Decision:** Register the public catalogue router before the protected product administration router under `/api/v1/products`.
+
+**Reason:** Both routers share a URL prefix. The public listing and slug routes must be matched before requests fall through to the router that applies authentication and ADMIN/STAFF authorization.

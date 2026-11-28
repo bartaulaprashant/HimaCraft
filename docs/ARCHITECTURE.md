@@ -33,43 +33,20 @@ React + TypeScript browser application
 - `apps/backend`: Express API, business modules, integrations, workers and backend tests.
 - `apps/frontend`: React application.
 - `packages/shared`: genuinely shared types, schemas or constants. Avoid coupling it to server-only code.
-- `docs`: project documentation and phase records.
+- `docs`: project context, progress, architecture, database, API, decisions and development history.
 
 ## Backend module conventions
 
 A business module should own its routes, controller, service and validation schemas where appropriate. Shared cross-cutting code belongs in common locations such as config, middleware, utilities and infrastructure.
 
-Suggested module layout (adapt to the existing repository rather than moving files without need):
+Current relevant modules include:
+- `modules/auth`
+- `modules/customers`
+- `modules/categories`
+- `modules/artisans`
+- `modules/products`
 
-```text
-src/
-├── config/
-├── middleware/
-├── common/
-├── modules/
-│   ├── auth/
-│   ├── users/
-│   ├── addresses/
-│   ├── products/
-│   ├── categories/
-│   ├── inventory/
-│   ├── cart/
-│   ├── wishlist/
-│   ├── coupons/
-│   ├── checkout/
-│   ├── orders/
-│   ├── payments/
-│   ├── reviews/
-│   ├── notifications/
-│   └── admin/
-├── integrations/
-├── jobs/
-│   ├── queues/
-│   ├── workers/
-│   └── processors/
-├── app.ts
-└── server.ts
-```
+The products module currently contains product, variant, image and public catalogue functionality. Inspect the actual repository before assuming module filenames or adding new modules.
 
 ## Request lifecycle
 
@@ -83,14 +60,39 @@ src/
 8. Central error middleware formats failures.
 9. Winston records operational events without logging secrets or sensitive credentials.
 
+## Product and catalogue routing
+
+The public catalogue and protected product administration routes share the `/api/v1/products` prefix.
+
+In `apps/backend/src/app.ts`, register the public catalogue router before the protected product router:
+
+```ts
+app.use("/api/v1/products", catalogRoutes);
+app.use("/api/v1/products", productRoutes);
+```
+
+The protected product router applies authentication and ADMIN/STAFF authorization to its routes. Keep the registration order intact when modifying route mounting. Verify route matching after adding overlapping paths.
+
+Product administration includes product CRUD/archive, nested variant management and nested image management. Public catalogue routes expose active products and product details by slug.
+
 ## Data and consistency
 
 - PostgreSQL is the source of truth for users, catalog, inventory, orders and payments.
 - Use Prisma transactions for operations that must commit atomically.
-- Use conditional updates/locking or another justified concurrency-safe approach for inventory reservation.
+- Inventory reservation and adjustment operations must be concurrency-safe.
 - Redis is an optimization and coordination layer, not the source of truth for durable business records.
 - Cache invalidation must be explicit for affected resources.
 - Queue jobs must be retry-safe and idempotent where possible.
+
+### Current catalogue implementation notes
+
+- Product/category/artisan slugs are generated from names when omitted.
+- Product archive, artisan deactivation and variant deactivation preserve records rather than hard-delete them.
+- Creating a product variant also creates its inventory row with quantity and reserved both zero.
+- Product image files are stored in Cloudinary; image metadata and Cloudinary public IDs are stored in PostgreSQL.
+- Image database operations use transactions where multiple image records must change together.
+- Cloudinary cleanup is best-effort. Failed cleanup can leave orphaned assets.
+- Catalogue price sorting currently loads matching products and sorts in application code before pagination. This is correct for the current implementation but should be optimized before the catalogue grows significantly.
 
 ## Security principles
 

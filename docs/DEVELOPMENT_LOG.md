@@ -2,17 +2,21 @@
 
 Append concise entries in reverse chronological order. Record meaningful changes, commands/results, decisions and unresolved issues. Never record secret values.
 
-## 2026-11-28 — Category Management implementation
+## 2026-11-28 — Phase 5 product catalogue and category completion
 
-- Added the Category Management backend module.
-- Implemented category validation, service, controller and routes.
-- Added public category listing and slug lookup.
-- Added ADMIN/STAFF-protected category management endpoints.
-- Added parent-category validation and circular hierarchy protection.
-- Prevented deletion of categories that still contain products or child categories.
-- Reused the existing Prisma Category model; no migration required.
-- User confirmed backend TypeScript typecheck passes.
-- Production build and manual API verification passes
+- Completed Category Management: public listing and slug lookup, ADMIN/STAFF management, hierarchy validation and deletion protection.
+- Completed Product Management: create, get by ID, update and archive.
+- Completed Artisan Management: list, get, create, update and deactivate.
+- Completed product variant management, including automatic creation of zeroed inventory records.
+- Completed product image management using Cloudinary and Multer.
+- Implemented primary image switching and promotion of the next image when the primary image is deleted.
+- Implemented public catalogue listing, search, filtering, sorting, pagination and product detail lookup by slug.
+- Public catalogue exposes ACTIVE products only.
+- User manually verified the endpoint groups and confirmed backend TypeScript typecheck passes.
+- No new schema migration was required for the catalogue implementation described above.
+- Known follow-up: catalogue price sorting currently loads matching products and sorts in application code before pagination. Optimize when appropriate.
+- Known follow-up: Cloudinary cleanup is best-effort and may leave orphaned assets if provider cleanup fails.
+- Updated existing documentation files; no phase-specific documentation directory is used.
 
 ## 2026-11-28 — Documentation state reconciliation
 
