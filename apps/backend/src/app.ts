@@ -17,6 +17,8 @@ import catalogRoutes from "./modules/products/catalog.routes.js";
 import inventoryRoutes from "./modules/inventory/inventory.routes.js";
 import cartRoutes from "./modules/cart/cart.routes.js";
 import wishlistRoutes from "./modules/wishlist/wishlist.routes.js";
+import orderRoutes from "./modules/orders/order.routes.js";
+import adminOrderRoutes from "./modules/orders/admin-order.routes.js";
 
 const app = express();
 
@@ -54,6 +56,8 @@ app.use("/api/v1/artisans", artisanRoutes);
 app.use("/api/v1/inventory", inventoryRoutes);
 app.use("/api/v1/cart", cartRoutes);
 app.use("/api/v1/wishlist", wishlistRoutes);
+app.use("/api/v1/orders", orderRoutes);
+app.use("/api/v1/admin/orders", adminOrderRoutes);
 
 
 app.use(notFound);

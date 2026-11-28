@@ -1,5 +1,21 @@
 # HimaCraft — Development Log
 
+## 2026-11-28 — Phase 8 checkout and order lifecycle
+
+- Implemented COD checkout with customer address ownership validation, server-side pricing, order-item snapshots and delivery-address snapshots.
+- Added transactional stock reservation during checkout and cart clearing after successful order creation.
+- Added customer order listing, detail retrieval and pending-order cancellation with reservation release.
+- Added ADMIN/STAFF order listing, status filtering/search, detail retrieval and status transitions.
+- Added reservation confirmation and inventory consumption when confirming orders, reservation release on pending-order cancellation, tracking-number requirement for shipping and order status history.
+- Kept shipping free: `shippingFee = 0`; order total equals subtotal.
+- Removed coupons and discounts from the Prisma schema and database through migration `20261128093053_remove_coupons_and_discounts`.
+- Applied the migration, regenerated Prisma Client and confirmed backend TypeScript typecheck passed.
+- Customer order endpoints were manually verified by the user; admin/staff endpoints were marked verified per user confirmation.
+- Phase 6 endpoint verification remains skipped; Phase 7 endpoint verification remains unconfirmed.
+- Automated tests remain deferred.
+- Next phase: Phase 9 — Payments and Stripe webhooks.
+
+
 ## 2026-11-28 — Phase 6 and 7 implementation; roadmap update
 
 - Implemented inventory management and stock reservation lifecycle, including the BullMQ expiry worker.

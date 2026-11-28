@@ -48,6 +48,7 @@ Current relevant modules include:
 - `modules/inventory` — inventory records, adjustments, movements and stock reservations.
 - `modules/cart` — authenticated customer cart operations.
 - `modules/wishlist` — authenticated customer wishlist operations.
+- `modules/orders` — customer checkout/order access and ADMIN/STAFF order management.
 
 The products module currently contains product, variant, image and public catalogue functionality. Inspect the actual repository before assuming module filenames or adding new modules.
 
@@ -146,7 +147,7 @@ Local development uses Docker Compose for PostgreSQL and Redis. Initial deployme
 
 ## Current implementation modules
 
-The backend currently has dedicated modules for inventory, cart and wishlist
+The backend currently has dedicated modules for inventory, cart, wishlist and orders
 in addition to authentication, customers, categories, artisans and products.
 
 - Inventory adjustments are transactional and create inventory movement records.
@@ -155,3 +156,25 @@ in addition to authentication, customers, categories, artisans and products.
 - Wishlist entries are customer-scoped and variant-specific.
 - Inventory reservation expiry is processed asynchronously through the BullMQ inventory queue.
 - Coupons, discounts and promotional pricing are excluded from the current project scope.
+
+## Order and checkout lifecycle
+
+The `orders` module owns customer checkout, customer order access and admin/staff order management.
+
+- Customer routes are mounted at `/api/v1/orders` and require the `CUSTOMER` role.
+- Admin/staff routes are mounted at `/api/v1/admin/orders` and require `ADMIN` or `STAFF`.
+- Checkout, cancellation and admin status-update mutations use trusted-origin protection.
+
+Checkout validates address ownership, cart contents, active product/variant state, available inventory and current server-side prices. Order creation, order-item snapshots, delivery-address snapshot, COD payment creation, initial status history and stock reservations are handled transactionally.
+
+Orders preserve purchased product/variant details and delivery information independently of later catalogue or address changes. COD payments begin with `PENDING` status. Shipping is free: `shippingFee` is zero and order total equals subtotal.
+
+The order lifecycle supports:
+- `PENDING` → `CONFIRMED` or `CANCELLED`
+- `CONFIRMED` → `PROCESSING`
+- `PROCESSING` → `SHIPPED`
+- `SHIPPED` → `DELIVERED`
+
+Confirming an order consumes reserved inventory and records an inventory movement. Cancelling a pending order releases active reservations. Status changes are recorded in order history. A tracking number is required when shipping an order.
+
+Coupons, discounts and promotional pricing are excluded. Stripe payment processing and webhook handling belong to Phase 9.

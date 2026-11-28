@@ -219,19 +219,19 @@ For each batch:
 
 ## Current phase and next action
 
-- Phase 1 — repository/project setup: verified complete.
-- Phase 2 — backend foundation and infrastructure: verified complete.
-- Phase 3 — authentication and authorization: verified complete.
-- Phase 4 — customer profile and address management: verified complete.
-- Phase 5 — product catalogue and categories: verified complete.
-- Phase 6 — inventory and stock reservations: implemented; endpoint verification skipped at the user's request.
-- Phase 7 — cart and wishlist: implemented; backend TypeScript typecheck passed; endpoint verification pending.
-- Phase 8 — checkout, shipping and order lifecycle: next.
+- Phase 1 — repository/project setup: completed.
+- Phase 2 — backend foundation and infrastructure: completed.
+- Phase 3 — authentication and authorization: completed.
+- Phase 4 — customer profile and address management: completed.
+- Phase 5 — product catalogue and categories: completed; endpoint groups manually verified.
+- Phase 6 — inventory and stock reservations: implemented; backend typecheck and worker startup confirmed; endpoint verification intentionally skipped.
+- Phase 7 — cart and wishlist: implemented; backend TypeScript typecheck passed; endpoint verification remains unconfirmed.
+- Phase 8 — checkout, shipping and order lifecycle: completed. Customer order endpoints manually verified; admin/staff endpoints marked verified per user confirmation. Coupon/discount removal migration applied, Prisma Client regenerated and backend typecheck passed.
 
-Phase 8 (Coupons and Promotions) was removed from the roadmap. Coupons, discounts and promotional pricing are not part of the current project scope. The phase numbers after the removed phase have been shifted accordingly.
+**Current phase: Phase 9 — Payments and Stripe webhooks.**
 
-**Immediate next action:** Inspect the existing order-related Prisma models, address handling, cart services and inventory reservation lifecycle. Plan checkout and order management around the existing implementation. Do not assume new models or migrations are required.
+Immediate next action: inspect the existing `Payment` and `PaymentWebhookEvent` models, payment configuration, and inventory reservation-expiry workflow before implementing payment-provider integration. Stripe webhook events must be signature-verified and processed idempotently. Do not introduce coupons, discounts or promotional pricing. Automated tests remain deferred unless the user changes that preference.
 
 ## New-chat continuation prompt
 
-"Continue HimaCraft development. Read `docs/AI_CONTEXT.md`, `docs/PROGRESS.md`, `docs/ARCHITECTURE.md`, `docs/DATABASE.md`, `docs/API.md` and `docs/DECISIONS.md`. Phases 1–5 are verified complete. Phase 6 (inventory and stock reservations) and Phase 7 (cart and wishlist) are implemented; see `PROGRESS.md` for verification details. The next phase is Phase 8: checkout, shipping and order lifecycle. Coupons, discounts and promotional pricing are explicitly excluded from the project scope. Inspect the actual repository and Prisma schema before changing anything. Keep explanations concise, implement backend-first, and update existing documentation after verified implementation batches."
+"Continue HimaCraft development. Read `docs/AI_CONTEXT.md`, `docs/PROGRESS.md`, `docs/ARCHITECTURE.md`, `docs/DATABASE.md`, `docs/API.md` and `docs/DECISIONS.md`. Phases 1–5 are complete. Phases 6 and 7 are implemented; see `PROGRESS.md` for their endpoint-verification details. Phase 8 checkout and order lifecycle is complete. Customer order endpoints were manually verified and admin/staff endpoints were marked verified per user confirmation. The next phase is Phase 9: payments and Stripe webhooks. Coupons, discounts and promotional pricing are explicitly excluded from the project scope. Inspect the actual repository and Prisma schema before changing anything. Keep explanations concise, implement backend-first, and update existing documentation after verified implementation batches."

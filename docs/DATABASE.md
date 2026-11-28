@@ -141,7 +141,7 @@ Known fields:
 
 Each product variant has an optional one-to-one inventory relation. Variant creation currently creates an inventory record with `quantity: 0` and `reserved: 0`.
 
-Inventory availability is a business invariant and must be handled transactionally. Inspect the current inventory and stock-reservation models before implementing Phase 6.
+Inventory availability is a business invariant and must be handled transactionally. Stock reservation lifecycle is implemented; inspect the live models before changing inventory behavior.
 
 ## Other domain areas
 
@@ -174,3 +174,58 @@ Run migrations only after reviewing schema changes. `migrate dev` is for develop
 ## Change log
 
 Update this document when models, relations, constraints, indexes or important data invariants change.
+
+## Orders, reservations and payments
+
+### Order
+
+The `Order` model stores:
+- `id`, unique `orderNumber`, `userId` and `status` (default `PENDING`).
+- `subtotal`, `shippingFee` (default `0`), `total` and `currency` (default `NPR`).
+- Shipping snapshot fields: `shippingName`, `shippingPhone`, `shippingAddress`, `shippingCity`, `shippingCountry` and optional `shippingPostalCode`.
+- Optional `customerNote` and `trackingNumber`.
+- Optional lifecycle timestamps: `paidAt`, `shippedAt`, `deliveredAt` and `cancelledAt`.
+- `createdAt` and `updatedAt`.
+
+Relations include the customer, order items, payments, status history, stock reservations and inventory movements. Indexes support customer history, status-based administration and chronological listing.
+
+### OrderItem
+
+Stores `orderId`, optional `variantId`, `productName`, `variantName`, `sku`, `quantity`, `unitPrice`, `total` and `currency` (default `NPR`). Product and variant values are snapshots from purchase time. The optional variant relation uses `SetNull`; order items are deleted with their order.
+
+### OrderStatusHistory
+
+Stores `orderId`, `status`, optional `note` and `createdAt`. It is indexed by `[orderId, createdAt]`.
+
+### StockReservation
+
+Stores `orderId`, `variantId`, `quantity`, `status` (default `ACTIVE`), `expiresAt` and `createdAt`.
+- Unique constraint: `[orderId, variantId]`.
+- Expiry index: `[status, expiresAt]`.
+- Checkout creates reservations transactionally.
+- Order confirmation consumes reserved stock.
+- Pending-order cancellation releases active reservations.
+
+### Payment
+
+Stores `orderId`, `provider`, `status` (default `PENDING`), `amount`, `currency` (default `NPR`), optional unique `providerPaymentId`, optional `failureReason`, optional `paidAt`, and timestamps. COD checkout creates a payment with `PENDING` status.
+
+### PaymentWebhookEvent
+
+Stores a unique `providerEventId`, `eventType`, optional `processedAt` and `createdAt`, with an index on `processedAt`. The schema model exists for webhook processing; Stripe payment and webhook implementation is Phase 9.
+
+### InventoryMovement
+
+Stores `variantId`, optional `orderId`, movement `type`, `quantity`, optional `note` and `createdAt`. Order-linked inventory movements preserve the association with the order; deleting an order sets the movement's `orderId` to null.
+
+### Checkout data rules
+
+- Checkout uses server-side variant prices.
+- Delivery details and product details are snapshotted onto the order.
+- Order, order items, COD payment, initial status history and stock reservations are created within the checkout transaction.
+- Shipping is free: `shippingFee = 0`; order total equals subtotal.
+- Coupons, discounts and promotional pricing are excluded.
+
+### Coupon and discount removal
+
+Migration `20261128093053_remove_coupons_and_discounts` removed the `DiscountType` enum, `Coupon` and `CouponUsage` models, the user coupon-usage relation, and the order coupon and discount fields. The migration was applied successfully. The initial migration was not modified. Before removal, database counts were zero for coupons, coupon usages, orders with coupons and orders with discounts.

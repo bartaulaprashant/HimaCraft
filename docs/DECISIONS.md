@@ -122,3 +122,13 @@ Record durable technical decisions here. Add new decisions with a date, context,
 **Reason:** Keep the initial single-store e-commerce implementation focused on catalogue, inventory, cart, checkout, orders and payments without introducing a separate promotional-pricing subsystem.
 
 **Consequences:** Do not implement coupon or discount endpoints, services, validation, UI or order-calculation logic. Existing completed phases do not depend on this functionality. Reconsider this decision only if the project scope is explicitly changed in the future.
+
+## D-021 — COD checkout and free shipping
+
+**Date:** 2026-11-28
+
+**Decision:** The initial checkout flow uses Cash on Delivery (COD). The payment record is created with `PENDING` status. Shipping is free, so `shippingFee` is zero and the order total equals the subtotal.
+
+**Reason:** Keep the initial checkout and order lifecycle focused while payment-provider integration is implemented separately.
+
+**Consequences:** Stripe payment processing and webhook handling are implemented in Phase 9. Do not add shipping charges or alternative payment methods without an explicit scope decision.

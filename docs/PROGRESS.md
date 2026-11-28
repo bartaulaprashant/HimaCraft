@@ -4,27 +4,29 @@
 
 ## Current position
 
-- **Current phase:** Phase 8 — Checkout, shipping and order lifecycle.
-- **Current task:** Inspect the existing order-related Prisma models, services and routes before designing checkout.
-- **Last confirmed milestone:** Phase 7 Cart and Wishlist implementation completed; backend TypeScript typecheck passed.
-- **Next task:** Inspect the existing order schema, address handling, inventory reservation lifecycle and cart implementation before implementing checkout.
-- Phase 8 (Coupons and Promotions) has been permanently removed from the current project scope. Checkout is now Phase 8.
+- **Current phase:** Phase 9 — Payments and Stripe webhooks.
+- **Current task:** Inspect the existing payment model, payment configuration and reservation-expiry workflow before designing payment processing.
+- **Last completed milestone:** Phase 8 — Checkout, shipping and order lifecycle.
+- **Next task:** Begin Phase 9 payment-provider integration and webhook processing.
+- Coupons, discounts and promotional pricing are excluded from the project scope.
 - Automated tests are deferred by user preference.
-- Production build status for the latest Phase 5 batch has not been confirmed in this log.
+- Phase 6 endpoint verification was intentionally skipped. Phase 7 endpoint verification remains unconfirmed.
+- Phase 8 customer order endpoints were manually verified by the user; admin/staff endpoints were marked verified per user confirmation. The coupon/discount removal migration was applied, Prisma Client regenerated and backend TypeScript typecheck passed.
+- Production build status for the latest Phase 5 batch has not been confirmed.
 
 ## Phase overview
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1 | Repository and project setup | Verified complete |
-| 2 | Backend foundation and infrastructure | Verified complete |
-| 3 | Authentication and authorization | Verified complete |
-| 4 | Customer profile and address management | Verified complete |
-| 5 | Product catalogue, categories and artisans | Verified complete |
-| 6 | Inventory and stock reservations | Implemented — endpoint verification skipped |
-| 7 | Cart and wishlist | Implemented — typecheck passed; endpoint verification pending |
-| 8 | Checkout, shipping and order lifecycle | Not started |
-| 9 | Payments and Stripe webhooks | Not started |
+| 1 | Repository and project setup | Completed |
+| 2 | Backend foundation and infrastructure | Completed |
+| 3 | Authentication and authorization | Completed |
+| 4 | Customer profile and address management | Completed |
+| 5 | Product catalogue, categories and artisans | Completed |
+| 6 | Inventory and stock reservations | Completed — endpoint verification skipped |
+| 7 | Cart and wishlist | Completed — endpoint verification unconfirmed |
+| 8 | Checkout, shipping and order lifecycle | Completed |
+| 9 | Payments and Stripe webhooks | Next |
 | 10 | Reviews and product recommendations | Not started |
 | 11 | Notifications and browser push | Not started |
 | 12 | Admin operations and analytics | Not started |
@@ -159,7 +161,7 @@ Known follow-up items:
 
 ## Phase 6 — Inventory and stock reservations
 
-<badge color="success">Implemented</badge>
+<badge color="success">Completed</badge>
 
 - [x] Inventory management service.
 - [x] Stock adjustment with transaction-safe database operations.
@@ -173,7 +175,7 @@ Known follow-up items:
 
 ## Phase 7 — Cart and wishlist
 
-<badge color="success">Implemented</badge>
+<badge color="success">Completed</badge>
 
 ### Cart
 - [x] Retrieve authenticated customer's cart.
@@ -204,22 +206,71 @@ Known follow-up items:
 
 ## Phase 8 — Checkout, shipping and order lifecycle
 
-<badge color="info">Next</badge>
+<badge color="success">Completed</badge>
 
-### Before implementation
-- [ ] Inspect existing Order, OrderItem, OrderStatus and related Prisma models.
-- [ ] Inspect customer address implementation and ownership rules.
-- [ ] Inspect cart and inventory reservation services.
-- [ ] Define checkout validation and price snapshot rules.
-- [ ] Define transaction-safe order creation and inventory reservation.
-- [ ] Define shipping address snapshot and shipping cost handling.
-- [ ] Define order status transitions and cancellation behavior.
-- [ ] Implement customer checkout and order endpoints.
-- [ ] Implement ADMIN/STAFF order management endpoints.
-- [ ] Verify relevant endpoints and edge cases.
-- [ ] Update API, database and progress documentation.
+### 8.1 Customer checkout
+- [x] Customer checkout endpoint implemented.
+- [x] Validate selected address ownership.
+- [x] Revalidate cart contents, active products/variants and available inventory.
+- [x] Calculate prices and totals on the server.
+- [x] Create order items with product/variant snapshots.
+- [x] Snapshot delivery details onto the order.
+- [x] Create initial COD payment with `PENDING` status.
+- [x] Reserve stock within the checkout transaction.
+- [x] Clear the cart after successful checkout.
+- [x] Free shipping: `shippingFee = 0`; total equals subtotal.
+- [x] Customer checkout/order endpoints manually verified by the user.
 
-Coupons, discounts and promotional pricing are excluded from the current project scope. Do not add coupon or discount logic to checkout or order calculations.
+### 8.2 Customer order management
+- [x] List customer orders with pagination.
+- [x] Retrieve an order belonging to the authenticated customer.
+- [x] Allow cancellation only while the order is `PENDING`.
+- [x] Release active reservations when a pending order is cancelled.
+- [x] Record order status history.
+
+### 8.3 Admin and staff order management
+- [x] List orders with pagination, status filtering and search.
+- [x] Retrieve order details.
+- [x] Restrict access to `ADMIN` and `STAFF`.
+- [x] Implement order status transitions.
+- [x] Confirm reservations and consume reserved inventory when confirming an order.
+- [x] Release active reservations when cancelling a pending order.
+- [x] Require a tracking number when marking an order as shipped.
+- [x] Record order status history and relevant timestamps.
+- [x] Admin/staff order endpoints marked verified per user confirmation.
+
+Allowed transitions:
+- `PENDING` → `CONFIRMED` or `CANCELLED`
+- `CONFIRMED` → `PROCESSING`
+- `PROCESSING` → `SHIPPED`
+- `SHIPPED` → `DELIVERED`
+
+### 8.4 Remove coupons and discounts
+- [x] Remove `DiscountType`, `Coupon` and `CouponUsage` from the Prisma schema.
+- [x] Remove coupon relations and order coupon/discount fields.
+- [x] Generate and review migration `20261128093053_remove_coupons_and_discounts`.
+- [x] Apply the migration without resetting database volumes.
+- [x] Regenerate Prisma Client.
+- [x] Confirm no coupon/discount implementation remains in backend source or Prisma schema.
+- [x] Prisma validation and backend TypeScript typecheck passed.
+- [x] Migration status confirmed up to date.
+- [x] Pre-migration database counts were zero for coupons, coupon usages, orders with coupons and orders with discounts.
+
+### 8.5 Phase verification
+- [x] Customer order endpoints manually verified by the user.
+- [x] Admin/staff endpoints marked verified per user confirmation.
+- [x] Coupon/discount removal migration applied successfully.
+- [x] Prisma Client regenerated successfully.
+- [x] Backend TypeScript typecheck passed.
+- [x] Documentation updated.
+
+### Scope and behavior
+- COD is the initial checkout payment method.
+- COD payments begin with `PENDING` status.
+- Shipping is free; `shippingFee` is zero and total equals subtotal.
+- Coupons, discounts and promotional pricing are excluded.
+- Stripe payment processing and webhook handling belong to Phase 9.
+- Automated tests remain deferred by user preference.
 
 ## Verification policy
 

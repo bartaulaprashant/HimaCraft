@@ -337,3 +337,94 @@ Inventory reservation expiry is handled internally; there is no public reservati
 - Wishlist: backend TypeScript typecheck passed; endpoint verification not confirmed.
 
 These verification notes describe the checks performed; they do not imply that untested endpoints have been manually verified.
+
+## Orders and checkout
+
+All routes below use the `/api/v1` prefix.
+
+### Customer checkout
+
+Access: authenticated `CUSTOMER`. Checkout is a trusted-origin-protected mutation.
+
+`POST /orders/checkout`
+
+Example request body:
+
+```json
+{
+  "addressId": "00000000-0000-4000-8000-000000000001",
+  "customerNote": "Please handle with care."
+}
+```
+
+- `addressId` identifies an address owned by the authenticated customer.
+- `customerNote` is optional.
+- Product prices and totals are calculated by the server.
+- The order stores delivery-address and product/variant snapshots.
+- Checkout creates a COD payment with `PENDING` status.
+- Inventory is reserved transactionally.
+- Shipping is free: `shippingFee` is zero and `total` equals `subtotal`.
+
+### Customer order endpoints
+
+Access: authenticated `CUSTOMER`.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/orders?page=1&limit=10` | List the customer's orders |
+| GET | `/orders/:orderId` | Retrieve one of the customer's orders |
+| POST | `/orders/:orderId/cancel` | Cancel a pending order |
+
+Cancellation is allowed only while the order is `PENDING`. Active stock reservations are released as part of the cancellation transaction. The cancellation route requires trusted-origin validation.
+
+### Admin and staff order endpoints
+
+Access: authenticated `ADMIN` or `STAFF`.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/admin/orders?page=1&limit=10&status=PENDING&search=HC-...` | List, filter and search orders |
+| GET | `/admin/orders/:orderId` | Retrieve order details |
+| PATCH | `/admin/orders/:orderId/status` | Update order status |
+
+The status-update route requires trusted-origin validation.
+
+Example request bodies:
+
+```json
+{ "status": "CONFIRMED" }
+```
+
+```json
+{ "status": "PROCESSING" }
+```
+
+```json
+{
+  "status": "SHIPPED",
+  "trackingNumber": "TRACK-123456"
+}
+```
+
+```json
+{ "status": "DELIVERED" }
+```
+
+```json
+{ "status": "CANCELLED" }
+```
+
+Allowed transitions:
+
+| Current status | Allowed next status |
+|---|---|
+| PENDING | CONFIRMED, CANCELLED |
+| CONFIRMED | PROCESSING |
+| PROCESSING | SHIPPED |
+| SHIPPED | DELIVERED |
+
+A tracking number is required when transitioning to `SHIPPED`. Confirming an order consumes its reserved inventory and records an inventory movement. Cancelling a pending order releases its active reservations. Status changes are recorded in order history.
+
+### Payment scope
+
+COD is the current checkout payment method and its initial payment status is `PENDING`. Stripe payment processing and webhook handling are Phase 9. Coupons, discounts and promotional pricing are not supported.

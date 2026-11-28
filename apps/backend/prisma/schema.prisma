@@ -50,10 +50,6 @@ enum PaymentProvider {
   COD
 }
 
-enum DiscountType {
-  PERCENTAGE
-  FIXED
-}
 
 enum ReservationStatus {
   ACTIVE
@@ -102,7 +98,6 @@ model User {
   reviews          Review[]
   notifications    Notification[]
   pushSubscriptions PushSubscription[]
-  couponUsages     CouponUsage[]
   auditLogs        AuditLog[]
 
   @@index([role, status])
@@ -326,51 +321,14 @@ model WishlistItem {
   @@unique([userId, variantId])
 }
 
-model Coupon {
-  id          String       @id @default(uuid())
-  code        String       @unique
-  description String?
-  type        DiscountType
-  value       Int
-  minOrderAmount Int?
-  maxDiscount Int?
-  usageLimit  Int?
-  usedCount   Int          @default(0)
-  startsAt    DateTime
-  expiresAt   DateTime
-  isActive    Boolean      @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  orders Order[]
-  usages CouponUsage[]
-
-  @@index([isActive, startsAt, expiresAt])
-}
-
-model CouponUsage {
-  id       String @id @default(uuid())
-  couponId String
-  userId   String
-  orderId  String @unique
-  createdAt DateTime @default(now())
-
-  coupon Coupon @relation(fields: [couponId], references: [id])
-  user   User   @relation(fields: [userId], references: [id])
-  
-  @@unique([couponId, userId])
-}
 
 model Order {
   id          String      @id @default(uuid())
   orderNumber String      @unique
   userId      String
-  couponId    String?
   status      OrderStatus @default(PENDING)
 
   subtotal    Int
-  discount    Int         @default(0)
   shippingFee Int         @default(0)
   total       Int
   currency    String      @default("NPR")
@@ -394,7 +352,6 @@ model Order {
   updatedAt DateTime @updatedAt
 
   user      User   @relation(fields: [userId], references: [id])
-  coupon    Coupon? @relation(fields: [couponId], references: [id], onDelete: SetNull)
   items     OrderItem[]
   payments  Payment[]
   history   OrderStatusHistory[]
