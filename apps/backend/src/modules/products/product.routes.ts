@@ -6,6 +6,8 @@ import { authorize } from "../../middleware/authorize.js";
 import { requireTrustedOrigin } from "../../middleware/require-trusted-origin.js";
 
 import * as productController from "./product.controller.js";
+import * as variantController from "./variant.controller.js";
+
 
 const router = Router();
 
@@ -34,6 +36,33 @@ router.delete(
   "/:productId",
   requireTrustedOrigin,
   productController.archive,
+);
+
+//variants endpoints 
+
+router.get("/:productId/variants", variantController.list);
+
+router.post(
+  "/:productId/variants",
+  requireTrustedOrigin,
+  variantController.create,
+);
+
+router.get(
+  "/:productId/variants/:variantId",
+  variantController.getById,
+);
+
+router.patch(
+  "/:productId/variants/:variantId",
+  requireTrustedOrigin,
+  variantController.update,
+);
+
+router.delete(
+  "/:productId/variants/:variantId",
+  requireTrustedOrigin,
+  variantController.deactivate,
 );
 
 export default router;
