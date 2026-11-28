@@ -15,12 +15,12 @@ function getUserId(req: Parameters<RequestHandler>[0]): string {
 
 export const checkout: RequestHandler = async (req, res) => {
   const input = checkoutSchema.parse(req.body);
-  const order = await orderService.checkout(getUserId(req), input);
+  const result = await orderService.checkout(getUserId(req), input);
 
   res.status(201).json({
     success: true,
     message: "Order placed successfully",
-    data: { order },
+    data: result,
   });
 };
 

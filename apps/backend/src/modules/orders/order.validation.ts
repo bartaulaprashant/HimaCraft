@@ -4,6 +4,7 @@ export const checkoutSchema = z
   .object({
     addressId: z.string().uuid(),
     customerNote: z.string().trim().max(500).optional(),
+    paymentMethod: z.enum(["COD", "STRIPE"]).default("COD"),
   })
   .strict();
 

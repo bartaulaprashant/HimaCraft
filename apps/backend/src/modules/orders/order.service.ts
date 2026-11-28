@@ -1,14 +1,19 @@
-
 import { randomBytes } from "node:crypto";
 import type { Prisma } from "../../../generated/prisma/client.js";
 
 import { prisma } from "../../config/database.js";
 import { AppError } from "../../shared/errors/app-error.js";
-import { reserveOrderStockInTransaction, releaseOrderReservationsInTransaction } from "../inventory/reservation.service.js";
+import {
+  reserveOrderStockInTransaction,
+  releaseOrderReservationsInTransaction,
+} from "../inventory/reservation.service.js";
+import { env } from "../../config/env.js";
+import { getStripeClient } from "../../config/stripe.js";
 
 type CheckoutInput = {
   addressId: string;
   customerNote?: string;
+  paymentMethod: "COD" | "STRIPE";
 };
 
 async function withSerializableRetry<T>(
@@ -58,8 +63,74 @@ function generateOrderNumber() {
   return `HC-${date}-${suffix}`;
 }
 
+async function failStripeCheckout(orderId: string, paymentId: string) {
+  await withSerializableRetry(() =>
+    prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`
+          SELECT "id"
+          FROM "Order"
+          WHERE "id" = ${orderId}
+          FOR UPDATE
+        `;
+
+        const payment = await tx.payment.findFirst({
+          where: {
+            id: paymentId,
+            orderId,
+            provider: "STRIPE",
+            status: "PENDING",
+            providerPaymentId: null,
+          },
+          select: { id: true },
+        });
+
+        const order = await tx.order.findUnique({
+          where: { id: orderId },
+          select: { status: true },
+        });
+
+        // Do not overwrite a payment or order already handled elsewhere.
+        if (!payment || order?.status !== "PENDING") {
+          return;
+        }
+
+        await tx.payment.update({
+          where: { id: paymentId },
+          data: {
+            status: "FAILED",
+            failureReason: "Stripe Checkout session creation failed",
+          },
+        });
+
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
+            status: "CANCELLED",
+            cancelledAt: new Date(),
+          },
+        });
+
+        await releaseOrderReservationsInTransaction(tx, orderId);
+
+        await tx.orderStatusHistory.create({
+          data: {
+            orderId,
+            status: "CANCELLED",
+            note: "Order cancelled because Stripe Checkout could not be created",
+          },
+        });
+      },
+      { isolationLevel: "Serializable" },
+    ),
+  );
+}
+
 export async function checkout(userId: string, input: CheckoutInput) {
-  return withSerializableRetry(() =>
+  // Validate Stripe configuration before creating an order.
+  const stripe = input.paymentMethod === "STRIPE" ? getStripeClient() : null;
+
+  const order = await withSerializableRetry(() =>
     prisma.$transaction(
       async (tx) => {
         // Lock the cart before reading its contents. This serializes checkout
@@ -120,11 +191,7 @@ export async function checkout(userId: string, input: CheckoutInput) {
         for (const item of cartItems) {
           const { variant, quantity } = item;
 
-          if (
-            !Number.isInteger(quantity) ||
-            quantity < 1 ||
-            quantity > 99
-          ) {
+          if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
             throw new AppError(
               400,
               "Cart contains an invalid item quantity",
@@ -193,6 +260,22 @@ export async function checkout(userId: string, input: CheckoutInput) {
         const shippingFee = 0;
         const total = subtotal;
 
+        if (input.paymentMethod === "STRIPE") {
+          const stripeAmount = total * 100;
+
+          if (
+            total <= 0 ||
+            !Number.isSafeInteger(stripeAmount) ||
+            stripeAmount > 99_999_999
+          ) {
+            throw new AppError(
+              400,
+              "Order amount is outside Stripe's supported range",
+              "STRIPE_AMOUNT_UNSUPPORTED",
+            );
+          }
+        }
+
         const order = await tx.order.create({
           data: {
             orderNumber: generateOrderNumber(),
@@ -207,10 +290,7 @@ export async function checkout(userId: string, input: CheckoutInput) {
             // change an existing order.
             shippingName: address.fullName,
             shippingPhone: address.phone,
-            shippingAddress: [
-              address.addressLine1,
-              address.addressLine2,
-            ]
+            shippingAddress: [address.addressLine1, address.addressLine2]
               .filter(Boolean)
               .join(", "),
             shippingCity: address.city,
@@ -234,7 +314,7 @@ export async function checkout(userId: string, input: CheckoutInput) {
 
             payments: {
               create: {
-                provider: "COD",
+                provider: input.paymentMethod,
                 status: "PENDING",
                 amount: total,
                 currency,
@@ -297,6 +377,128 @@ export async function checkout(userId: string, input: CheckoutInput) {
       },
     ),
   );
+
+  if (!stripe) {
+    return {
+      order,
+      checkoutUrl: null,
+    };
+  }
+
+  const payment = order.payments[0];
+
+  if (!payment) {
+    throw new AppError(
+      500,
+      "Order payment record could not be retrieved",
+      "PAYMENT_NOT_FOUND",
+    );
+  }
+
+  const customer = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
+  });
+
+  if (!customer) {
+    await failStripeCheckout(order.id, payment.id);
+
+    throw new AppError(404, "Customer account not found", "CUSTOMER_NOT_FOUND");
+  }
+
+  let session;
+
+  try {
+    session = await stripe.checkout.sessions.create(
+      {
+        mode: "payment",
+        allowed_payment_method_types: ["card"],
+        customer_email: customer.email,
+
+        line_items: order.items.map((item) => ({
+          quantity: item.quantity,
+          price_data: {
+            currency: item.currency.toLowerCase(),
+            unit_amount: item.unitPrice * 100,
+            product_data: {
+              name: `${item.productName} - ${item.variantName}`,
+            },
+          },
+        })),
+
+        success_url: `${env.FRONTEND_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${env.FRONTEND_URL}/checkout/cancel?orderId=${order.id}`,
+
+        metadata: {
+          orderId: order.id,
+          paymentId: payment.id,
+        },
+
+        payment_intent_data: {
+          metadata: {
+            orderId: order.id,
+            paymentId: payment.id,
+          },
+        },
+      },
+      {
+        idempotencyKey: `checkout-${payment.id}`,
+      },
+    );
+  } catch {
+    await failStripeCheckout(order.id, payment.id);
+
+    throw new AppError(
+      502,
+      "Could not initialize Stripe Checkout. Please try again.",
+      "STRIPE_SESSION_CREATION_FAILED",
+    );
+  }
+
+  if (!session.url) {
+    try {
+      await stripe.checkout.sessions.expire(session.id);
+      await failStripeCheckout(order.id, payment.id);
+    } catch {
+      // Leave the order pending if Stripe expiration fails.
+      // The reservation expiry worker will eventually release stock.
+    }
+
+    throw new AppError(
+      502,
+      "Stripe did not return a Checkout URL",
+      "STRIPE_CHECKOUT_URL_MISSING",
+    );
+  }
+
+  try {
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        providerPaymentId: session.id,
+      },
+    });
+  } catch {
+    // The session exists, but its ID could not be persisted.
+    // Attempt to expire it before releasing the reservation.
+    try {
+      await stripe.checkout.sessions.expire(session.id);
+      await failStripeCheckout(order.id, payment.id);
+    } catch {
+      // Leave pending for webhook reconciliation or reservation expiry.
+    }
+
+    throw new AppError(
+      502,
+      "Could not finalize Stripe Checkout. Please try again.",
+      "STRIPE_SESSION_PERSISTENCE_FAILED",
+    );
+  }
+
+  return {
+    order,
+    checkoutUrl: session.url,
+  };
 }
 
 export async function listCustomerOrders(
@@ -342,10 +544,7 @@ export async function listCustomerOrders(
   };
 }
 
-export async function getCustomerOrder(
-  userId: string,
-  orderId: string,
-) {
+export async function getCustomerOrder(userId: string, orderId: string) {
   const order = await prisma.order.findFirst({
     where: {
       id: orderId,
@@ -377,10 +576,7 @@ export async function getCustomerOrder(
   return order;
 }
 
-export async function cancelCustomerOrder(
-  userId: string,
-  orderId: string,
-) {
+export async function cancelCustomerOrder(userId: string, orderId: string) {
   return withSerializableRetry(() =>
     prisma.$transaction(
       async (tx) => {
